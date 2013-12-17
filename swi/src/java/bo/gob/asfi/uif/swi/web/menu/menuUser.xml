@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<menu>
+    <items>
+        <!-- Principal Usuario UIF ToolBar -->
+        <menu>
+            <xtype>tbbutton</xtype>
+            <text>Inicio</text> 
+            <iconCls>icon</iconCls> 
+            <menu>
+                <items>
+                    <menu>                    
+                        <text>Salir</text> 
+                        <iconCls>delete</iconCls> 
+                        <module>
+                            <id>gs-00443</id> 
+                            <title>Ver servicios</title>
+                            <iconCls>delete</iconCls> 
+                            <url>logout</url> 
+                        </module>
+                    </menu> 
+                </items>
+            </menu>
+        </menu>
+        <menu>
+            <xtype>tbbutton</xtype>
+            <text>Servicios</text> 
+            <iconCls>module-app</iconCls> 
+            <menu>
+                <items>
+                    <menu>                    
+                        <text>Ver Servicios</text> 
+                        <iconCls>operation</iconCls> 
+                        <module>
+                            <id>gs-003</id> 
+                            <title>Ver Servicios</title>
+                            <iconCls>operation</iconCls> 
+                            <url>paneldeservicios</url> 
+                        </module>
+                    </menu> 
+                    <menu>                    
+                        <text>Reporte Preliminar de Investigación (RPI)</text> 
+                        <iconCls>icon</iconCls> 
+                        <module>
+                            <id>cd-002</id> 
+                            <title>Reporte Preliminar de Investigación (RPI)</title>
+                            <iconCls>icon</iconCls> 
+                            <url>rpiview</url> 
+                        </module>
+                    </menu>
+                </items>
+            </menu>
+        </menu>
+    </items>   
+</menu>

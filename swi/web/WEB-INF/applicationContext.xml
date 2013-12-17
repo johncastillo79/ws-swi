@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="
+                         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+                         http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+                         http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd">
+
+    
+    <!-- Activates various annotations to be detected in bean classes -->
+    <context:annotation-config />
+	
+    <!-- Scans the classpath for annotated components that will be auto-registered as Spring beans.
+    For example @Controller and @Service. Make sure to set the correct base-package-->
+    <context:component-scan base-package="bo.gob.asfi.uif.swi" />
+    
+    <!-- Configures the annotation-driven Spring MVC Controller programming model.
+    Note that, with Spring 3.1, this tag works in Servlet MVC only!  -->
+    <mvc:annotation-driven /> 
+    
+    <bean id="httpRequestHandlerAdapter" class="org.springframework.web.servlet.mvc.HttpRequestHandlerAdapter"></bean>
+                
+    <bean class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+        <property name="mediaTypes">
+            <map>
+                <entry key="atom" value="application/atom+xml"/>
+                <entry key="html" value="text/html"/>
+                <entry key="js" value="text/javascript"/>
+                <entry key="json" value="application/json"/>
+                <entry key="xml" value="application/xml"/>		
+            </map>
+        </property>
+        <property name="viewResolvers">
+            <list>
+                <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+                    <property name="prefix" value="/WEB-INF/jsp/"/>
+                    <property name="suffix" value=".jsp"/>
+                </bean>
+            </list>
+        </property>
+        <property name="defaultViews">
+            <list>
+                <bean class="org.springframework.web.servlet.view.json.MappingJacksonJsonView">
+                    <property name="prefixJson" value="false" />
+                </bean>    
+                <bean class="org.springframework.web.servlet.view.xml.MarshallingView">
+                    <property name="marshaller">
+                        <bean class="org.springframework.oxm.xstream.XStreamMarshaller">
+                            <property name="autodetectAnnotations" value="true"></property>
+                        </bean>   
+                    </property>
+                </bean>			
+            </list>
+        </property>
+    </bean> 
+    
+    <!-- Forwards requests to the "/" resource to the "index" view -->
+    <!--<mvc:view-controller path="/" view-name="main"/>-->
+    
+    <!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources/ directory -->
+    <mvc:resources mapping="/**" location="/" />
+    
+    <!-- system admin, pass: iteam123 -->
+    <bean id="defaultuser" class="bo.gob.asfi.uif.swi.model.Usuario">
+          <property name="nombres" value="Admin" />
+          <property name="paterno" value="Swi" />
+          <property name="usuario" value="adminswi" />
+          <property name="clave" value="f82188f01f3f772056edfd2602c1c3a2" />
+          <property name="rol" value="swi" />
+          <property name="activo" value="true" />          
+    </bean>        
+    <!-- ADD PERSISTENCE SUPPORT HERE (jpa, hibernate, etc) -->
+    <import resource="database-config.xml"/>
+    <import resource="security-config.xml"/>
+</beans>
