@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.List;
 import org.hibernate.Criteria;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -59,6 +60,12 @@ public class DaoImpl implements Dao {
     public <T> List<T> findAll(Class<T> entityClass) {
         return this.sessionFactory.getCurrentSession().createQuery("from " + entityClass.getName()).list();
     }
+    
+    @Transactional(readOnly = true)
+    public List<UserService> findAllServices() {
+        return this.sessionFactory.getCurrentSession().createQuery("from UserService order by nombre").list();
+                //createCriteria(UserService.class).addOrder(Order.asc("nombre")).list();
+    }   
 
     @Transactional(readOnly = true)
     public <T> T load(Class<T> entityClass, Serializable id) {

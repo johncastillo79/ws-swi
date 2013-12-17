@@ -33,6 +33,8 @@ public interface Dao {
     
     public <T> List<T> findAll(Class<T> entityClass);
     
+    public List<UserService> findAllServices();
+    
     public <T> T getUsuarioByUsername(String username);
 
 //    public <T> T getServiciosPorUsuario(Integer id);

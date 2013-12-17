@@ -31,9 +31,8 @@ public class Parametro implements Serializable {
     private String nombre;
     private String etiqueta;
     private String tipo;
-    private Boolean requerido = false;
-    @Transient
-    private Boolean oculto;
+    private Boolean requerido = false;    
+    private Boolean oculto  = false;
     private String valordefecto;
     private String patron;
     private Integer rpifield;
@@ -97,7 +96,11 @@ public class Parametro implements Serializable {
     }
 
     public Boolean getOculto() {
-        return this.tipo.equals("hidden");
+        return oculto;
+    }
+
+    public void setOculto(Boolean oculto) {
+        this.oculto = oculto;
     }
 
     public String getValordefecto() {
