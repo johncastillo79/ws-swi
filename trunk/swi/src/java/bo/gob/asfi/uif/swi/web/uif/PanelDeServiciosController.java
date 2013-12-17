@@ -49,12 +49,12 @@ public class PanelDeServiciosController {
         if (auth.getPrincipal() instanceof CustomUserDetails) {
             CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
             if (ud.getRole().equals("admin_uif")) {
-                lst = dao.findAll(UserService.class);
+                lst = dao.findAllServices();
             } else {
                 lst = dao.getUserServices(ud.getId());
             }
         } else {
-            lst = dao.findAll(UserService.class);
+            lst = dao.findAllServices();
         }
 
         List<Map<String, Object>> samples = new ArrayList<Map<String, Object>>();

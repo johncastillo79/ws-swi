@@ -57,7 +57,7 @@ public class RpiController {
     @RequestMapping(value = "/formserviceitems")
     public @ResponseBody
     List<FieldSet> formServiceItems() {
-        List<UserService> lst = dao.findAll(UserService.class);
+        List<UserService> lst = dao.findAllServices();//findAll(UserService.class);
 
         return requestFormFiends(lst);
     }
