@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<menu>
+    <items>
+        <!-- Principal Usuario UIF ToolBar -->
+        <menu>
+            <xtype>tbbutton</xtype>
+            <text>Seguridad</text> 
+            <iconCls>security</iconCls> 
+            <menu>
+                <items>
+                    <menu>    
+                        <text>Gestion de Usuarios</text> 
+                        <iconCls>icon</iconCls> 
+                        <menu>
+                            <items>                    
+                                <menu>                    
+                                    <text>Registro de Usuarios</text> 
+                                    <iconCls>user</iconCls> 
+                                    <module>
+                                        <id>gu-001</id> 
+                                        <title>Registro de Usuarios</title>
+                                        <iconCls>user</iconCls> 
+                                        <url>security/usermanager</url> 
+                                    </module>
+                                </menu>                                                                                                                      
+                            </items>
+                        </menu>
+                    </menu>                    
+                    <menu>                    
+                        <text>Bitácora de registro</text> 
+                        <iconCls>entity-app</iconCls> 
+                        <module>
+                            <id>bu-001</id> 
+                            <title>Bitácora de registro</title>
+                            <iconCls>entity-app</iconCls> 
+                            <url>busquedaporusuario</url> 
+                        </module>
+                    </menu>  
+                    <menu>                    
+                        <text>Salir</text> 
+                        <iconCls>delete</iconCls> 
+                        <module>
+                            <id>gs-00443</id> 
+                            <title>Salir</title>
+                            <iconCls>delete</iconCls> 
+                            <url>logout</url> 
+                        </module>
+                    </menu>                                      
+                </items>
+            </menu>
+        </menu>
+    </items>   
+</menu>
