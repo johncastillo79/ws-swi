@@ -42,6 +42,10 @@ public class IndividualController {
     Map<String, ? extends Object> guardarParametro(Parametro parametro) {
         Map<String, Object> body = new HashMap<String, Object>();
         try {
+            System.out.println(parametro.getOculto());
+            if(parametro.getOculto()) {
+                parametro.setTipo("hidden");
+            }
             dao.update(parametro);
             body.put("success", true);
         } catch (Exception e) {
@@ -70,7 +74,7 @@ public class IndividualController {
     @RequestMapping(value = "/listaservicios", method = RequestMethod.GET)
     public @ResponseBody
     List<UserService> listaServicioss() {
-        List<UserService> lst = dao.findAll(UserService.class);
+        List<UserService> lst = dao.findAllServices();//findAll(UserService.class);
         for (UserService us : lst) {
             us.setParametros(listarParametros(us.getId()));
         }
@@ -86,12 +90,12 @@ public class IndividualController {
         if (auth.getPrincipal() instanceof CustomUserDetails) {
             CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
             if (ud.getRole().equals("admin_uif")) {
-                lst = dao.findAll(UserService.class);
+                lst = dao.findAllServices();//findAll(UserService.class);
             } else {
                 lst = dao.getUserServices(ud.getId());
             }
         } else {
-            lst = dao.findAll(UserService.class);
+            lst = dao.findAllServices();//findAll(UserService.class);
         }
         //List<UserService> lst = dao.findAll(UserService.class);        
 
