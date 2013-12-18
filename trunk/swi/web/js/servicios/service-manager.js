@@ -87,6 +87,7 @@ domain.ServiceManager = {
             url: Ext.SROOT + 'definirservicio',
             border: false,
             autoHeight: true,
+            fileUpload: true,
             bodyStyle: 'padding:10px',
             defaults: {
                 msgTarget: 'side',
@@ -102,6 +103,15 @@ domain.ServiceManager = {
                     fieldLabel: 'Descripci&oacute;n',
                     allowBlank: false,
                     name: 'descripcion'
+                }, {
+                    xtype: 'fileuploadfield',
+                    emptyText: 'Seleccione una imagen',
+                    fieldLabel: 'Imagen',
+                    name: 'imagen',
+                    buttonText: '',
+                    buttonCfg: {
+                        iconCls: 'upload-icon'
+                    }
                 }, {
                     xtype: 'textfield',
                     fieldLabel: 'Xpath',
@@ -139,6 +149,7 @@ domain.ServiceManager = {
                     text: 'Guardar',
                     handler: function() {
                         form.getForm().submit({
+                            waitMsg: 'Uploading your photo...',
                             success: function(form, action) {
                                 options.grid.store.reload();
                                 win.close();
@@ -146,7 +157,7 @@ domain.ServiceManager = {
                             failure: function(form, action) {
                                 if (action.failureType === 'server') {
                                     var r = Ext.util.JSON.decode(action.response.responseText);
-                                    com.icg.errors.submitFailure('Error', r.errorMessage);
+                                    com.icg.errors.submitFailure('Error', r.message);
                                 }
                             }
                         });
@@ -282,6 +293,10 @@ domain.ServiceManager = {
                                             },
                                             failure: function(result, request) {
                                                 options.panelinfo.getEl().unmask();
+                                                console.log(result);
+                                                //var r = Ext.util.JSON.decode(action.response.responseText);
+                                                //com.icg.errors.submitFailure('Error', r.message);
+
                                                 Ext.MessageBox.show({
                                                     title: 'Error',
                                                     msg: 'Error del servidor',
@@ -371,7 +386,8 @@ domain.ServiceManager = {
             buttons: [{
                     text: 'Guardar',
                     handler: function() {
-                        this.disabled = true;
+                        var button = this;
+                        button.disabled = true;
                         form.getForm().submit({
                             waitMsg: 'Leyendo WSDL...',
                             success: function(form, action) {
@@ -379,7 +395,9 @@ domain.ServiceManager = {
                                 win.close();
                             },
                             failure: function(form, action) {
-                                domain.errors.submitFailure('Error', 'La direcci&oacute;n no es un WSDL v&aacute;lido.')
+                                domain.errors.submitFailure('Error', action.result.message);
+                                //console.log(action);
+                                button.disabled = false;
                             }
                         });
                     }
@@ -411,6 +429,7 @@ domain.ServiceManager = {
             url: Ext.SROOT + 'actualizarservicio',
             border: false,
             autoHeight: true,
+            fileUpload: true,
             bodyStyle: 'padding:10px',
             defaults: {
                 msgTarget: 'side',
@@ -430,20 +449,25 @@ domain.ServiceManager = {
                     xtype: 'textfield',
                     fieldLabel: 'Xpath',
                     allowBlank: false,
-                    //value: '/',
                     name: 'responseXpath'
                 }, {
-                    xtype: "hidden",
-                    name: "router",
-                    //value: options.router,
+                    xtype: 'fileuploadfield',
+                    emptyText: 'Seleccione una imagen',
+                    fieldLabel: 'Imagen',
+                    name: 'imagen',
+                    buttonText: '',
+                    buttonCfg: {
+                        iconCls: 'upload-icon'
+                    }
                 }, {
                     xtype: "hidden",
-                    name: "url",
-                    //value: options.url,
+                    name: "router"
                 }, {
                     xtype: "hidden",
-                    name: "id",
-                    //value: options.url,
+                    name: "url"
+                }, {
+                    xtype: "hidden",
+                    name: "id"
                 }]
         });
 
@@ -528,6 +552,35 @@ domain.ServiceManager.View = {
                         }
                     }
                 }, '-', {
+                    iconCls: 'drink',
+                    text: 'Expandir',
+                    //tooltip: '',
+                    handler: function() {
+                        this.text = 'ddd',
+                                tree.getRootNode().reload();
+                        tree.getRootNode().expand(true);
+                    }
+                }, {
+                    iconCls: 'drink',
+                    text: 'Contraer',
+                    //tooltip: 'Abrir Operaci&oacute;n',
+                    handler: function() {
+                        //this.text = 'ddd';
+                        tree.getRootNode().reload();
+                        //tree.getRootNode().expand(true);
+                    }
+                }, {
+                    iconCls: 'page-refresh',
+                    text: 'Recargar',
+                    handler: function() {
+                        var record = tree.getSelectionModel().getSelectedNode();
+                        if (record) {
+                            domain.ServiceManager.reloadService({node: record, tree: tree});
+                        } else {
+                            domain.errors.mustSelect();
+                        }
+                    }
+                }, {
                     text: 'Abrir',
                     iconCls: 'open',
                     tooltip: 'Abrir Operaci&oacute;n',
@@ -540,24 +593,6 @@ domain.ServiceManager.View = {
                                 panelinfo: serviceInfoPanel,
                                 grid: sgrid
                             });
-                        } else {
-                            domain.errors.mustSelect();
-                        }
-                    }
-                }, {
-                    iconCls: 'drink',
-                    text: 'Expandir',
-                    handler: function() {
-                        tree.getRootNode().reload();
-                        tree.getRootNode().expand(true);
-                    }
-                }, {
-                    iconCls: 'page-refresh',
-                    text: 'Recargar',
-                    handler: function() {
-                        var record = tree.getSelectionModel().getSelectedNode();
-                        if (record) {
-                            domain.ServiceManager.reloadService({node: record, tree: tree});
                         } else {
                             domain.errors.mustSelect();
                         }
@@ -594,7 +629,10 @@ domain.ServiceManager.View = {
         var cols = [new Ext.grid.RowNumberer({
                 width: 27
             }),
-            {header: "nombre", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'nombre'}
+            {header: "Nombre", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'nombre'},
+            {header: "Descripci&oacute;n", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'descripcion'},
+            {header: "Xpath", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'responseXpath'}
+
         ];
 
         // declare the source Grid
@@ -643,9 +681,9 @@ domain.ServiceManager.View = {
             region: 'west',
             collapsible: true,
             split: true,
-            width: 400,
-            minWidth: 350,
-            maxWidth: 450,
+            width: 450,
+            minWidth: 400,
+            maxWidth: 550,
             items: [tree, sgrid]
         });
 
