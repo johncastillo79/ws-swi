@@ -1,5 +1,5 @@
 <%--
-    Document   : Vista de RPI
+    Document   : Vista del RPI
     Created on : 30-11-2013, 07:05:10 PM
     Author     : John Castillo Valencia
 --%>
@@ -10,7 +10,7 @@
 <!DOCTYPE HTML>
 <html lang="es">
     <head>
-        <title>Vista de RPI</title>
+        <title>Vista del RPI</title>
         <!-- ALL ExtJS Framework resources -->
         <%@include file="../ExtJSScripts-ES.jsp"%>  
 
@@ -40,6 +40,7 @@
                         var grid = new Ext.grid.GridPanel({
                             //title: 'Resultados',                            
                             //height: 190,
+                            //region:'south',
                             store: new Ext.data.JsonStore({
                                 fields: fields,
                                 data: data,
@@ -71,7 +72,7 @@
                                 url: Ext.SROOT + 'webservicesystem',
                                 border: false,
                                 autoHeight: true,
-                                region: 'center',
+                                region: 'north',
                                 bodyStyle: 'padding:10px',
                                 labelWidth: 130,
                                 frame: true,
@@ -90,9 +91,9 @@
                                                 success: function(form, action) {
                                                     serviceResponse = Ext.util.JSON.decode(action.response.responseText);
                                                     win.getEl().unmask();
-                                                    win.remove(1);
+                                                    //win.remove(1);
                                                     grid = domain.Manager.fields(serviceResponse.result);
-                                                    win.add(grid);
+                                                    ppanel.add(grid);
 //                                                    win.add({
 //                                                        xtype: 'panel',
 //                                                        title: 'Resultado',
@@ -101,7 +102,7 @@
 //                                                        height: 200,
 //                                                        html: '<pre>' + serviceResponse.result + '</pre>'
 //                                                    });                                                    
-                                                    win.doLayout();
+                                                    ppanel.doLayout();
                                                 },
                                                 failure: function(form, action) {
                                                     //Ext.Msg.alert('Warning', action.result.errorMessage);
@@ -112,20 +113,26 @@
                                         }
                                     }]
                             });
-
+                            var ppanel = new Ext.Panel({
+                                xtype: 'panel',
+                                title: 'Resultado',
+                                region: 'center',
+                                layout: 'fit',
+                                height: 200
+                            });
                             var win = new Ext.Window({
-                                title: 'Servicio In',
+                                title: 'Definir Respuesta',
                                 autoScroll: true,
-                                layout: 'anchor',
+                                layout: 'border',
                                 width: 600,
                                 height: 300,
                                 minHeight: 250,
                                 minWidth: 550,
-                                items: form,
+                                items: [form,ppanel],
                                 maximizable: true,
                                 modal: true,
                                 buttons: [{
-                                        text: 'Usar este resultado',
+                                        text: 'Usar resultado',
                                         handler: function() {
                                             var resPanel = Ext.getCmp('responsepanel-' + serviceResponse.id);
                                             //resPanel.body.update('<pre>' + serviceResponse.result + '</pre>');
@@ -133,6 +140,11 @@
                                             resPanel.add(grid);
                                             resPanel.doLayout();
                                             options.salida = serviceResponse.result;
+                                            win.close();
+                                        }
+                                    }, {
+                                        text: 'Cerrar',
+                                        handler: function() {
                                             win.close();
                                         }
                                     }]
@@ -300,7 +312,7 @@
                         border: false,
                         autoHeight: true,
                         bodyStyle: 'padding:10px',
-                        labelWidth: 170,
+                        labelWidth: 100,
                         frame: false,
                     });
 
@@ -430,8 +442,8 @@
                                     collapsible: true,
                                     height: 170,
                                     tbar: ['->', {
-                                            text: 'Abrir',
-                                            tooltip: 'Abrir el servicio individual',
+                                            text: 'Definir',
+                                            tooltip: 'Definir la respuesta del servicio',
                                             iconCls: 'open',
                                             handler: function() {
                                                 domain.Manager.individual({
