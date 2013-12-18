@@ -46,7 +46,12 @@ var gridPanelResultados = new Ext.grid.GridPanel({
     columns: [
         {header: "Usuario", width: 100, sortable: true, dataIndex: 'usuario'},
         {header: "Servicio", width: 100, sortable: true, dataIndex: 'servicio'},
-        {header: "Fecha", width: 100, sortable: true, dataIndex: 'fecha'},
+        {header: "Fecha", width: 100, sortable: true, dataIndex: 'fecha', renderer : function(val) {                        
+                        if (val) {
+                            var date = new Date(val);
+                            return date.format('d/m/Y H:i:s');
+                        }
+                    }},
         {header: "Solicitud", width: 100, sortable: true, dataIndex: 'request'},
         {header: "Respuesta", width: 100, sortable: true, dataIndex: 'response'}
         

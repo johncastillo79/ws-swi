@@ -18,6 +18,10 @@
 	<link type="text/css" rel="stylesheet" href="libs/syntaxhighlighter_3.0.83/styles/shCoreDefault.css"/>
 	<script type="text/javascript">SyntaxHighlighter.all();</script>
         
+        <link rel="stylesheet" type="text/css" href="/ext-3.3.1/examples/ux/fileuploadfield/css/fileuploadfield.css"/>
+        <!-- overrides to base library -->
+        <script type="text/javascript" src="/ext-3.3.1/examples/ux/fileuploadfield/FileUploadField.js"></script>
+        
         <script type="text/javascript" src="<c:url value="/js/servicios/service-manager.js"/>"></script> 
     </head>
     <body>     

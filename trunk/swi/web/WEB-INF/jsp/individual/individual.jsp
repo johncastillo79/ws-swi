@@ -32,14 +32,28 @@
                     });
                     var gridPanelParametros = new Ext.grid.GridPanel({
                         title: 'Parametros',
-                        height: 300,
+                        region: 'center',
                         columns: [
                             {header: "Nombre", width: 100, sortable: true, dataIndex: 'nombre'},
                             {header: "Etiqueta", width: 100, sortable: true, dataIndex: 'etiqueta'},
                             {header: "Tipo", width: 100, sortable: true, dataIndex: 'tipo'},
-                            {header: "Requerido", width: 100, sortable: true, dataIndex: 'requerido'},
+                            {header: "Requerido", width: 100, sortable: true, dataIndex: 'requerido',
+                                renderer: function(val) {
+                                    if (val) {
+                                        return 'Si'
+                                    } else {
+                                        return 'No'
+                                    }
+                                }},
                             {header: "Valor por Defecto", width: 100, sortable: true, dataIndex: 'valordefecto'},
-                            {header: "Oculto", width: 100, sortable: true, dataIndex: 'oculto'}
+                            {header: "Oculto", width: 100, sortable: true, dataIndex: 'oculto',
+                                renderer: function(val) {
+                                    if (val) {
+                                        return 'Si'
+                                    } else {
+                                        return 'No'
+                                    }
+                                }}
                         ],
                         store: storeParametros
                     });
@@ -51,7 +65,8 @@
 
                     function fun_buscar() {
                         storeParametros.load({params: {servicio_id: cboBusServicio.getValue()}});
-                    };
+                    }
+                    ;
 
                     var storeServicio = new Ext.data.JsonStore({
                         url: Ext.SROOT + 'individual/listaservicios',
@@ -74,8 +89,11 @@
                         typeAhead: true,
                         selectOnFocus: true
                     });
+
                     var formServicio = new Ext.FormPanel({
                         border: false,
+                        region: 'north',
+                        height: 150,
                         defaults: {xtype: 'textfield'},
                         bodyStyle: 'padding:10px',
                         items: [
@@ -90,19 +108,16 @@
                                             fun_buscar();
                                         }}
                                 ]
-                            }),
-                            gridPanelParametros,
+                            })
                         ]
                     });
 
-
-                    
                     var formParametro = new Ext.FormPanel({
                         url: 'individual/guardarparametros',
                         border: false,
                         bodyStyle: 'padding:10px',
                         labelWidth: 150,
-                        frame:true,
+                        frame: true,
                         items: [
                             new Ext.form.FieldSet({
                                 title: 'Propiedades del parametro',
@@ -113,14 +128,14 @@
                                         fieldLabel: 'Nombre Parametro',
                                         readOnly: true,
                                         name: 'nombre'
-                                    },{
+                                    }, {
                                         xtype: 'combo',
                                         fieldLabel: 'Tipo de dato',
                                         hiddenName: 'tipo',
                                         forceSelection: true,
                                         store: new Ext.data.ArrayStore({
                                             fields: ['type', 'objeto'],
-                                            data: [['string', 'Cadena'], ['text', 'Texto'], ['int', 'Entero'], ['float', 'Real'], ['truefalse', 'Falso/Verdadero'], ['date', 'Fecha'], ['hidden', 'Oculto'], /*['timestamp','Fecha y Hora'],['entity', 'Entidad'],['subentity','Entidad propia'],['entity','Entidad agregada (1/n)'],['centity','Entidad compuesta (n)'],['class','Entidad compuesta (1)']*/]
+                                            data: [['string', 'Cadena'], ['text', 'Texto'], ['int', 'Entero'], ['float', 'Real'], ['truefalse', 'Falso/Verdadero'], ['date', 'Fecha']]
                                         }),
                                         valueField: 'type',
                                         displayField: 'objeto',
@@ -129,23 +144,27 @@
                                         triggerAction: 'all',
                                         emptyText: 'Selecione el tipo...',
                                         selectOnFocus: true
-                                    },{
+                                    }, {
                                         xtype: 'checkbox',
                                         fieldLabel: 'Requerido',
                                         name: 'requerido'
-                                    },{
+                                    }, {
+                                        xtype: 'checkbox',
+                                        fieldLabel: 'Oculto',
+                                        name: 'oculto'
+                                    }, {
                                         xtype: 'textfield',
-                                        fieldLabel: 'Nombre a Desplegar',                                        
+                                        fieldLabel: 'Nombre a Desplegar',
                                         allowBlank: false,
                                         name: 'etiqueta'
-                                    },{
+                                    }, {
                                         xtype: 'textfield',
-                                        fieldLabel: 'Valor por Defecto',                                        
+                                        fieldLabel: 'Valor por Defecto',
                                         name: 'valordefecto'
-                                    },{
+                                    }, {
                                         xtype: 'hidden',
                                         name: 'id'
-                                    },{
+                                    }, {
                                         xtype: 'hidden',
                                         name: 'servicio.id'
                                     }]
@@ -154,77 +173,34 @@
                         //buttonAlign: 'center',
                         buttons: [
                             {text: 'Guardar', handler: function() {
-                                    formParametro.getForm().submit({
-                                        success: function(form, action) {
-                                            gridPanelParametros.store.reload();
-                                        },
-                                        failure: function(form, action) {
-                                            if (action.Failure == 'server') {
-                                                var r = Ext.util.JSON.decode(action.response.responseText);
-                                                alert(r.errorMessage);
-                                            }
+                                    Ext.MessageBox.confirm('Confirmar', '¿Confirma guardar los cambios?', function(r) {
+                                        if (r === 'yes') {
+                                            formParametro.getForm().submit({
+                                                success: function(form, action) {
+                                                    gridPanelParametros.store.reload();
+                                                },
+                                                failure: function(form, action) {
+                                                    if (action.Failure === 'server') {
+                                                        var r = Ext.util.JSON.decode(action.response.responseText);
+                                                        alert(r.errorMessage);
+                                                    }
+                                                }
+                                            });
                                         }
-                                    })
+                                    });
+
                                 }},
                             {text: 'Limpiar', handler: function() {
-                                    formParametro.getForm().reset();                                    
+                                    formParametro.getForm().reset();
                                 }}
                         ]
                     });
 
-                    var formXpath = new Ext.FormPanel({
-                        title:'XPATH',
-                        url: 'individual/setxpath',
-                        border: false,
-                        bodyStyle: 'padding:10px',
-                        labelWidth: 150,
-                        frame:true,
-                        items: [
-                            new Ext.form.FieldSet({
-                                title: 'Propiedades del parametro',
-                                autoHeight: true,
-                                defaults: {width: 200},
-                                items: [{
-                                        xtype: 'textfield',
-                                        fieldLabel: 'XPATH',
-                                        readOnly: true,
-                                        name: 'xpath'
-                                    },{
-                                        xtype: 'hidden',
-                                        name: 'id'
-                                    },{
-                                        xtype: 'hidden',
-                                        name: 'servicio.id'
-                                    }]
-                            })
-                        ],
-                        //buttonAlign: 'center',
-                        buttons: [
-                            {text: 'Guardar', handler: function() {
-                                    formXpath.getForm().submit({
-                                        success: function(form, action) {
-                                            //gridPanelParametros.store.reload();
-                                        },
-                                        failure: function(form, action) {
-//                                            if (action.Failure == 'server') {
-//                                                var r = Ext.util.JSON.decode(action.response.responseText);
-//                                                alert(r.errorMessage);
-//                                            }
-                                        }
-                                    })
-                                }},
-                            {text: 'Limpiar', handler: function() {
-                                    formParametro.getForm().reset();                                    
-                                }}
-                        ]
-                    });
-
-                    /*************PANELES*********************/
-                    /****/
                     var centro = new Ext.Panel({
                         title: 'Servicios',
-                        region: 'center',                        
-                        items: [formServicio]
+                        region: 'center',
+                        layout: 'border',
+                        items: [formServicio, gridPanelParametros]
                     });
 
                     var derecha = new Ext.Panel({
@@ -252,7 +228,6 @@
 
                     storeServicio.load();
                 }
-
             };
             Ext.onReady(domain.Panel.init, domain.Panel);
 
