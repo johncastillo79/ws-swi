@@ -59,11 +59,24 @@ Ext.ns('Ext.samples');
                     name: '_swi_userservice_id_',
                     value: options.id
                 });
+
+                var ppanel = new Ext.Panel({
+                    xtype: 'panel',
+                    //title: 'Resultado',
+                    region: 'center',
+                    border: false,
+                    layout:'fit',
+                    //bodyStyle: 'padding:10px',
+                    //autoScroll: true,
+                    height: 200
+                    //html: '<pre  class="brush: xml;"></pre>'
+                });
+
                 var form = new Ext.FormPanel({
                     url: Ext.SROOT + 'webservicesystem',
                     border: false,
                     autoHeight: true,
-                    region: 'center',
+                    region: 'north',
                     bodyStyle: 'padding:10px',
                     labelWidth: 130,
                     frame: true,
@@ -82,8 +95,8 @@ Ext.ns('Ext.samples');
                                     success: function(form, action) {
                                         var ro = Ext.util.JSON.decode(action.response.responseText);
                                         formreq.getEl().unmask();
-                                        formreq.remove(1);
-                                        var grid = Ext.samples.Fields(ro.result)
+                                        //formreq.remove(1);
+                                        var grid = Ext.samples.Fields(ro.result);
 //                                        formreq.add({
 //                                            xtype: 'panel',
 //                                            title: 'Resultado',
@@ -92,8 +105,8 @@ Ext.ns('Ext.samples');
 //                                            height: 200,
 //                                            html: '<code>' + ro.result + '</code>'
 //                                        });
-                                        formreq.add(grid);
-                                        formreq.doLayout();
+                                        ppanel.add(grid);
+                                        ppanel.doLayout();
                                     },
                                     failure: function(form, action) {
                                         //Ext.Msg.alert('Warning', action.result.errorMessage);
@@ -111,7 +124,13 @@ Ext.ns('Ext.samples');
                             }
                         }]
                 });
-                formreq.add(form);
+                
+                var panel = new Ext.Panel({
+                            layout: 'border',
+                            items: [form, ppanel]
+                        });
+                
+                formreq.add(panel);
                 formreq.doLayout();
             },
             failure: function(result, request) {
@@ -132,7 +151,7 @@ Ext.ns('Ext.samples');
                 '<div><a name="{id}"></a><h2><div>{title}</div></h2>',
                 '<dl>',
                 '<tpl for="samples">',
-                '<dd ext:url="{url}" ext:id="{id}"><img src="images/{icon}"/>',
+                '<dd ext:url="{url}" ext:id="{id}"><img src="{icon}"/>',
                 '<div><h4>{text}',
                 '<tpl if="this.isNew(values.status)">',
                 '<span class="new-sample"> (New)</span>',
@@ -149,16 +168,16 @@ Ext.ns('Ext.samples');
                 '<div style="clear:left"></div></dl></div>',
                 '</tpl>',
                 '</div>', {
-                    isExperimental: function(status) {
-                        return status == 'experimental';
-                    },
-                    isNew: function(status) {
-                        return status == 'new';
-                    },
-                    isUpdated: function(status) {
-                        return status == 'updated';
-                    }
-                }),
+            isExperimental: function(status) {
+                return status == 'experimental';
+            },
+            isNew: function(status) {
+                return status == 'new';
+            },
+            isUpdated: function(status) {
+                return status == 'updated';
+            }
+        }),
         onDblClick: function(e) {
             var group = e.getTarget('h2', 3, true);
             if (group) {
