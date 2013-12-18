@@ -26,19 +26,30 @@ import com.predic8.wsdl.Operation;
 import com.predic8.wsdl.Port;
 import com.predic8.wsdl.Service;
 import com.predic8.wsdl.WSDLParser;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import sun.misc.BASE64Decoder;
 
 /**
  *
@@ -74,7 +85,7 @@ public class ClienteDeServiciosController {
             dao.persist(servidor);
             body.put("success", true);
             return body;
-        } catch(DataIntegrityViolationException e) { 
+        } catch (DataIntegrityViolationException e) {
             body.put("message", "Nombre del Servicio ya existe");
         } catch (Exception e) {
             body.put("message", "WSDL no valido");
@@ -414,10 +425,13 @@ public class ClienteDeServiciosController {
 
     @RequestMapping(value = "/definirservicio", method = RequestMethod.POST)
     public @ResponseBody
-    Map<String, ? extends Object> crearServicio(UserService serv) {
-        Map<String, Object> body = new HashMap<String, Object>();
+    String crearServicio(UserService serv) {
         try {
-            //serv.setResponseXpath("/");
+            if (serv.getImagen() != null) {
+                byte[] bytes = IOUtils.toByteArray(serv.getImagen().getInputStream());
+                String imagen = new sun.misc.BASE64Encoder().encode(bytes);                
+                serv.setTextImage(imagen);
+            }
             dao.persist(serv);
             String[] parts = serv.getRouter().split(":");
             Servidor servidor = dao.get(Servidor.class, new Long(parts[0]));
@@ -436,13 +450,31 @@ public class ClienteDeServiciosController {
                     }
                 }
             }
-
-            body.put("success", true);
-            return body;
+            return "{success:true}";
         } catch (Exception e) {
         }
-        body.put("success", false);
-        return body;
+        return "{success:false}";
+    }
+
+    @RequestMapping("/photo/{id}")
+    public ResponseEntity<byte[]> testphoto(@PathVariable Integer id) throws IOException {
+        //InputStream in = servletContext.getResourceAsStream("/images/no_image.jpg");
+        UserService us = dao.get(UserService.class, id);
+        if (us.getTextImage() != null) {
+            BASE64Decoder decoder = new BASE64Decoder();
+            byte[] imgBytes = decoder.decodeBuffer(us.getTextImage());
+
+            InputStream stream = new ByteArrayInputStream(imgBytes);
+
+            final HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_JPEG);
+            return new ResponseEntity<byte[]>(IOUtils.toByteArray(stream), headers, HttpStatus.CREATED);
+        } else {
+            InputStream in = this.getClass().getClassLoader().getResourceAsStream("bo/gob/asfi/uif/swi/model/desktop.gif");
+            final HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_GIF);
+            return new ResponseEntity<byte[]>(IOUtils.toByteArray(in), headers, HttpStatus.CREATED);
+        }
     }
 
     @RequestMapping(value = "/eliminarservicio", method = RequestMethod.POST)
@@ -459,19 +491,22 @@ public class ClienteDeServiciosController {
 
     @RequestMapping(value = "/actualizarservicio", method = RequestMethod.POST)
     public @ResponseBody
-    Map<String, ? extends Object> actualizarServicio(UserService serv) {
-        Map<String, Object> body = new HashMap<String, Object>();
+    String actualizarServicio(UserService serv) {
         try {
             UserService s = dao.get(UserService.class, serv.getId());
             s.setNombre(serv.getNombre());
             s.setDescripcion(serv.getDescripcion());
             s.setResponseXpath(serv.getResponseXpath());
-            dao.update(s);
 
-            body.put("success", true);
+            if (serv.getImagen() != null) {
+                byte[] bytes = IOUtils.toByteArray(serv.getImagen().getInputStream());
+                String imagen = new sun.misc.BASE64Encoder().encode(bytes);                
+                s.setTextImage(imagen);
+            }
+            dao.update(s);
+            return "{success:true}";
         } catch (Exception e) {
-            body.put("success", false);
         }
-        return body;
+        return "{success:false}";
     }
 }

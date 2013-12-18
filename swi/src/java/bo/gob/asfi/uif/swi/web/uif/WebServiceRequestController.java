@@ -15,21 +15,17 @@ import com.predic8.wsdl.WSDLParser;
 import com.predic8.wstool.creator.RequestCreator;
 import com.predic8.wstool.creator.RequestTemplateCreator;
 import com.predic8.wstool.creator.SOARequestCreator;
-import com.predic8.wstool.creator.TemplateUtil;
 import groovy.xml.MarkupBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.servlet.http.HttpServletRequest;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPConnection;
@@ -40,9 +36,6 @@ import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -51,9 +44,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /**
  *
@@ -212,10 +202,9 @@ public class WebServiceRequestController {
             SOAPMessage soapResponse = soapConnection.call(getSoapMessageFromString(writer2.toString()), url);
             
             String response = printSOAPResponse(soapResponse);
-            
-            
-            //response = response.replaceAll("<", "&lt;");
-            //response = response.replaceAll(">", "&gt;");
+                        
+            response = response.replaceAll("<", "&lt;");
+            response = response.replaceAll(">", "&gt;");
                         
             body.put("result", response);
             model.addAttribute("result", response);

@@ -28,8 +28,8 @@ public class Bitacora {
     private Integer id;
     private String usuario;
     private String servicio;
-    @Temporal(javax.persistence.TemporalType.DATE)
-    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    @Temporal(javax.persistence.TemporalType.TIMESTAMP)
+    //@DateTimeFormat(pattern = "dd/MM/yyyy")
     private Date fecha;
 
     public Integer getId() {
