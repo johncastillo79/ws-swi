@@ -65,7 +65,7 @@ public class PanelDeServiciosController {
             Map<String, Object> itemserv = new HashMap<String, Object>();
             itemserv.put("text", us.getNombre());
             itemserv.put("desc", us.getDescripcion());
-            itemserv.put("icon", "desktop.gif");
+            itemserv.put("icon", "photo/" + us.getId());
             itemserv.put("url", us.getRouter());
             itemserv.put("id", us.getId());
             samples.add(itemserv);

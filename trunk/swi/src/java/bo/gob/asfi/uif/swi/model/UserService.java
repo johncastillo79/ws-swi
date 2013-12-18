@@ -17,6 +17,7 @@ import javax.persistence.Lob;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
 
 /**
  *
@@ -35,8 +36,12 @@ public class UserService implements Serializable {
     private String nombre;
     private String router;
     private String url;
+    @Transient
+    private CommonsMultipartFile imagen;
     @Lob
     private String descripcion;
+    @Lob
+    private String textImage;
     @Lob
     private String requestXmlTemplate;
     private String responseXpath;
@@ -139,5 +144,21 @@ public class UserService implements Serializable {
 
     public void setResponseXpath(String responseXpath) {
         this.responseXpath = responseXpath;
+    }
+
+    public CommonsMultipartFile getImagen() {
+        return imagen;
+    }
+
+    public void setImagen(CommonsMultipartFile imagen) {
+        this.imagen = imagen;
+    }
+
+    public String getTextImage() {
+        return textImage;
+    }
+
+    public void setTextImage(String textImage) {
+        this.textImage = textImage;
     }
 }
