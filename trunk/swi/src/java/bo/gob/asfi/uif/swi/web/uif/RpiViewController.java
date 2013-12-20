@@ -17,7 +17,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.heyma.core.extjs.components.ExtJSUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -39,6 +38,8 @@ public class RpiViewController {
     @Autowired
     Dao dao;
 
+    private Collection<FormField> rpifields;
+    
     @RequestMapping(value = "/rpiview")
     public String rpiView() {
         return "servicios/rpiview";
@@ -52,12 +53,12 @@ public class RpiViewController {
         if (auth.getPrincipal() instanceof CustomUserDetails) {
             CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
             if (ud.getRole().equals("admin_uif")) {
-                lst = dao.findAll(UserService.class);
+                lst = dao.findAllServices();//findAll(UserService.class);
             } else {
                 lst = dao.getUserServices(ud.getId());
             }
         } else {
-            lst = dao.findAll(UserService.class);
+            lst = dao.findAllServices();//findAll(UserService.class);
         }
 
         Collection<Parametro> parametros = new ArrayList<Parametro>();

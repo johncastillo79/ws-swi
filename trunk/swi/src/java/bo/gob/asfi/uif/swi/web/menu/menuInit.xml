@@ -49,5 +49,16 @@
                 </items>
             </menu>
         </menu>
+        <menu>
+            <xtype>tbbutton</xtype>
+            <text>Ayuda</text> 
+            <iconCls>help</iconCls> 
+            <module>
+                <id>cd-002</id> 
+                <title>Manual de Usuario</title>
+                <iconCls>icon</iconCls> 
+                <url>ayuda.pdf</url> 
+            </module>          
+        </menu>   
     </items>   
 </menu>

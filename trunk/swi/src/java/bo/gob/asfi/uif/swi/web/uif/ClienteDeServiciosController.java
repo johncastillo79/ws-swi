@@ -16,10 +16,8 @@ import bo.gob.asfi.uif.swi.model.Servicio;
 import bo.gob.asfi.uif.swi.model.Servidor;
 import bo.gob.asfi.uif.swi.model.UserService;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.predic8.schema.ComplexType;
 import com.predic8.schema.Element;
-import com.predic8.wsdl.Binding;
 import com.predic8.wsdl.BindingOperation;
 import com.predic8.wsdl.Definitions;
 import com.predic8.wsdl.Operation;
@@ -29,7 +27,6 @@ import com.predic8.wsdl.WSDLParser;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +46,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import sun.misc.BASE64Decoder;
+import org.apache.commons.codec.binary.Base64;
 
 /**
  *
@@ -163,103 +160,6 @@ public class ClienteDeServiciosController {
         }
         body.put("success", false);
         return body;
-    }
-
-    private String ejemploJsonTree() {
-        return "[{\n"
-                + "    text: 'To Do', \n"
-                + "    iconCls: 'server', \n"
-                + "    children: [{\n"
-                + "        text: 'Go jogging',\n"
-                + "        leaf: true,\n"
-                + "        checked: false\n"
-                + "    },{\n"
-                + "        text: 'Take a nap',\n"
-                + "        leaf: true,\n"
-                + "        checked: false\n"
-                + "    },{\n"
-                + "        text: 'Climb Everest',\n"
-                + "        leaf: true,\n"
-                + "        checked: false\n"
-                + "    }]\n"
-                + "},{\n"
-                + "    text: 'Grocery List',\n"
-                + "    iconCls: 'server', \n"
-                + "    children: [{\n"
-                + "        text: 'Bananas',\n"
-                + "        leaf: true,\n"
-                + "        checked: false\n"
-                + "    },{\n"
-                + "        text: 'Milk',\n"
-                + "        leaf: true,\n"
-                + "        checked: false\n"
-                + "    },{\n"
-                + "        text: 'Cereal',\n"
-                + "        leaf: true,\n"
-                + "        checked: false\n"
-                + "    },{\n"
-                + "        text: 'Energy foods',\n"
-                + "        cls: 'folder',\n"
-                + "        iconCls: 'update', \n"
-                + "        children: [{\n"
-                + "            text: 'Coffee',\n"
-                + "            leaf: true,\n"
-                + "            checked: false\n"
-                + "        },{\n"
-                + "            text: 'Red Bull',\n"
-                + "            leaf: true,\n"
-                + "            checked: false\n"
-                + "        }]\n"
-                + "    }]\n"
-                + "},{\n"
-                + "    text: 'Remodel Project', \n"
-                + "    cls: 'folder',\n"
-                + "    children: [{\n"
-                + "        text: 'Finish the budget',\n"
-                + "        leaf: true,\n"
-                + "        checked: false\n"
-                + "    },{\n"
-                + "        text: 'Call contractors',\n"
-                + "        leaf: true,\n"
-                + "        checked: false\n"
-                + "    },{\n"
-                + "        text: 'Choose design',\n"
-                + "        leaf: true,\n"
-                + "        checked: false\n"
-                + "    }]\n"
-                + "}]";
-    }
-
-    private List<Node> nodesFromJSONTEXT(String json) {
-        Type listType = new TypeToken<ArrayList<Node>>() {
-        }.getType();
-        List<Node> nodes = new Gson().fromJson(json, listType);
-        return nodes;
-    }
-
-    private List<org.heyma.core.extjs.components.Node> parseWSDLServiceTree(String swdlurl) {
-        List<org.heyma.core.extjs.components.Node> nodes = new ArrayList<org.heyma.core.extjs.components.Node>();
-        WSDLParser parser = new WSDLParser();
-        Definitions defs = parser.parse(swdlurl);
-
-        for (Binding bdg : defs.getBindings()) {
-            System.out.println(bdg.getName());
-            Node nb = new Node();
-            nb.setText(bdg.getName());
-            nb.setIconCls("binding");
-            nb.setChildren(new ArrayList<org.heyma.core.extjs.components.Node>());
-            for (BindingOperation op : bdg.getOperations()) {
-                //System.out.println(" - " + op.getName());
-                Node no = new Node();
-                no.setText(op.getName());
-                no.setIconCls("operation");
-                no.setLeaf(Boolean.TRUE);
-                nb.getChildren().add(no);
-            }
-            nodes.add(nb);
-        }
-
-        return nodes;
     }
 
     private List<org.heyma.core.extjs.components.Node> parseJsonStructServiceTree(String rootId, List<Servicio> servicios) {
@@ -427,9 +327,11 @@ public class ClienteDeServiciosController {
     public @ResponseBody
     String crearServicio(UserService serv) {
         try {
-            if (serv.getImagen() != null) {
+            if (serv.getImagen() != null && serv.getImagen().getSize() != 0) {
                 byte[] bytes = IOUtils.toByteArray(serv.getImagen().getInputStream());
-                String imagen = new sun.misc.BASE64Encoder().encode(bytes);                
+                //String imagen = new sun.misc.BASE64Encoder().encode(bytes);                                                
+                Base64 encode = new Base64();
+                String imagen = encode.encodeAsString(bytes);
                 serv.setTextImage(imagen);
             }
             dao.persist(serv);
@@ -461,8 +363,8 @@ public class ClienteDeServiciosController {
         //InputStream in = servletContext.getResourceAsStream("/images/no_image.jpg");
         UserService us = dao.get(UserService.class, id);
         if (us.getTextImage() != null) {
-            BASE64Decoder decoder = new BASE64Decoder();
-            byte[] imgBytes = decoder.decodeBuffer(us.getTextImage());
+            Base64 decoder = new Base64();
+            byte[] imgBytes = decoder.decode(us.getTextImage());
 
             InputStream stream = new ByteArrayInputStream(imgBytes);
 
@@ -498,9 +400,11 @@ public class ClienteDeServiciosController {
             s.setDescripcion(serv.getDescripcion());
             s.setResponseXpath(serv.getResponseXpath());
 
-            if (serv.getImagen() != null) {
-                byte[] bytes = IOUtils.toByteArray(serv.getImagen().getInputStream());
-                String imagen = new sun.misc.BASE64Encoder().encode(bytes);                
+            if (serv.getImagen() != null && serv.getImagen().getSize() != 0) {
+                byte[] bytes = IOUtils.toByteArray(serv.getImagen().getInputStream());                
+                //String imagen = new sun.misc.BASE64Encoder().encode(bytes);                                                
+                Base64 encode = new Base64();
+                String imagen = encode.encodeAsString(bytes);
                 s.setTextImage(imagen);
             }
             dao.update(s);

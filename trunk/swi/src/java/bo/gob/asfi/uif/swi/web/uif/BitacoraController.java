@@ -8,12 +8,18 @@ import bo.gob.asfi.uif.swi.dao.Dao;
 import bo.gob.asfi.uif.swi.model.Bitacora;
 import bo.gob.asfi.uif.swi.model.UserService;
 import bo.gob.asfi.uif.swi.model.Usuario;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.URLConnection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +32,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
  */
 @Controller
 public class BitacoraController {
-
+static int ARRAY_SIZE = 16384;
+    static int BUFFER_SIZE = 1024;
     @Autowired
     Dao dao;
 
@@ -158,5 +165,40 @@ public class BitacoraController {
             return null;
         }
 
+    }
+     @RequestMapping(value = "/downloadStream")
+    public @ResponseBody
+    void downloadStream(String xmlStr, String filename, HttpServletResponse resp) {
+        
+         try {
+/*
+            resp.setContentType("application/x-download");
+            resp.setHeader("Content-Disposition", "attachment;filename=\"" + filename + "\"");
+
+            PrintWriter out = resp.getWriter();
+            out.println(xmlStr);
+            */
+        /*    resp.setContentType("text/xml");
+        response.setCharacterEncoding("UTF-8");
+        response.setStatus(HttpServletResponse.SC_OK);
+        PrintWriter out = response.getWriter();
+        out.write(okResponse);
+        out.flush();
+        out.close();
+        response.flushBuffer();
+*/
+            resp.setContentType("application/octet-strem");
+        resp.setHeader("Content-Disposition", "attachment;filename='" + filename + "'");
+
+       
+        //int contentLength = connection.getContentLength();
+        PrintWriter out = resp.getWriter();
+
+        out.write(xmlStr);
+        out.close();
+
+        } catch (IOException e) {
+  e.printStackTrace();
+        }
     }
 }
