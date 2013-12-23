@@ -477,7 +477,7 @@
                         });
                     };
 
-                    fsloadRpi()
+                    fsloadRpi();
                 }
 
             };
