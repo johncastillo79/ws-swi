@@ -202,8 +202,11 @@
                     });
 
                     var formServicio = new Ext.Panel({
-                        border: false,
+                        border: true,
                         //frame: true,
+                        region: 'north',
+                        height: 300,
+                        split: true,
                         items: [/*formParametro*/],
                         tbar: [{
                                 text: 'Agregar campo',
@@ -211,16 +214,27 @@
                                 handler: function() {
                                     domain.Manager.addField({
                                         form: formParametro,
-                                        handler:fsloadRpi
+                                        handler: function() {
+                                            fsloadRpi();
+                                            fsloadRpiAll();
+                                        }
                                     })
                                 }
                             }]
+                    });
+                    var rpifields = new Ext.FormPanel({
+                        border: true,
+                        bodyStyle: 'padding:10px',
+                        labelWidth: 130,
+                        region: 'center',
+                        items: []
                     });
 
                     var centro = new Ext.Panel({
                         title: 'Servicios',
                         region: 'center',
-                        items: [formServicio]
+                        layout: 'border',
+                        items: [formServicio, rpifields]
                     });
 
                     var derecha = new Ext.Panel({
@@ -229,8 +243,8 @@
                         collapsible: true,
                         split: true,
                         autoScroll: true,
-                        width: 550,
-                        minWidth: 500,
+                        width: 400,
+                        minWidth: 400,
                         layout: 'anchor',
                         items: []
                     });
@@ -254,6 +268,7 @@
                             params: {id: e},
                             success: function(result, request) {
                                 fsload();
+                                fsloadRpiAll();
                             },
                             failure: function(result, request) {
 
@@ -279,8 +294,8 @@
                                     border: false,
                                     autoHeight: true,
                                     bodyStyle: 'padding:10px',
-                                    labelWidth: 170,
-                                    frame: true,
+                                    labelWidth: 90,
+                                    frame: false,
                                     items: sfields
                                 });
                                 derecha.removeAll();
@@ -316,10 +331,13 @@
                                                 tooltip: 'eliminar campo',
                                                 name: 'ss',
                                                 handler: function() {
-                                                      domain.Manager.deleteField({
-                                                          id:field.id.split(':')[0],
-                                                          handler:fsloadRpi
-                                                      });    
+                                                    domain.Manager.deleteField({
+                                                        id: field.id.split(':')[0],
+                                                        handler: function() {
+                                                            fsloadRpi();
+                                                            fsloadRpiAll();
+                                                        }
+                                                    });
                                                 }
                                             }]
                                     };
@@ -331,7 +349,7 @@
                                     border: false,
                                     autoHeight: true,
                                     bodyStyle: 'padding:10px',
-                                    labelWidth: 170,
+                                    labelWidth: 130,
                                     frame: false,
                                     //labelAlign: 'top',
                                     items: cfields
@@ -339,6 +357,7 @@
                                 formServicio.removeAll();
                                 formServicio.add(form);
                                 formServicio.doLayout();
+                                //fsloadRpiAll();
                             },
                             failure: function(result, request) {
 
@@ -346,7 +365,55 @@
                         });
                     };
 
-                    fsloadRpi()
+                    fsloadRpi();
+
+
+                    var fsloadRpiAll = function() {
+                        Ext.Ajax.request({
+                            url: Ext.SROOT + 'rpiview/formrpiitems',
+                            method: 'GET',
+                            success: function(result, request) {
+                                var sfields = Ext.util.JSON.decode(result.responseText);
+
+                                var cfields = new Array(); //composedfields
+                                Ext.each(sfields, function(field, index) {
+                                    var nfield = {
+                                        xtype: 'compositefield',
+                                        fieldLabel: field.etiqueta,
+                                        items: [field, {
+                                                xtype: 'displayfield',
+                                                width: 50,
+                                                value: '      '
+                                            }, {
+                                                xtype: 'button',
+                                                iconCls: 'arrow-up',
+                                                tooltip: 'Subir',
+                                                handler: function() {
+
+                                                }
+                                            }, {
+                                                xtype: 'button',
+                                                iconCls: 'arrow-down',
+                                                tooltip: 'Bajar',
+                                                handler: function() {
+
+                                                }
+                                            }]
+                                    };
+                                    cfields.push(nfield);
+                                });
+
+                                rpifields.removeAll();
+                                rpifields.add(cfields);
+                                rpifields.doLayout();
+                            },
+                            failure: function(result, request) {
+
+                            }
+                        });
+                    };
+
+                    fsloadRpiAll();
                 }
 
             };
