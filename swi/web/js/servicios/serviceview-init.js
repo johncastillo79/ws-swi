@@ -15,10 +15,11 @@ Ext.ns('Ext.samples');
             var cols = new Array();
             var fields = new Array();
             for (var prop in data[0]) {
-                console.log("key:" + prop);
+                //console.log("key:" + prop);
                 var col = {
                     header: prop,
-                    dataIndex: prop
+                    dataIndex: prop,
+                    sortable: true
                 };
                 cols.push(col);
                 var field = {
@@ -30,7 +31,7 @@ Ext.ns('Ext.samples');
             var grid = new Ext.grid.GridPanel({
                 title: 'Resultados',
                 //width: 400,
-                height: 190,
+                //height: 190,
                 store: new Ext.data.JsonStore({
                     fields: fields,
                     data: data,
@@ -65,11 +66,11 @@ Ext.ns('Ext.samples');
                     //title: 'Resultado',
                     region: 'center',
                     border: false,
-                    layout:'fit',
+                    layout: 'fit',
                     //bodyStyle: 'padding:10px',
                     //autoScroll: true,
                     height: 200
-                    //html: '<pre  class="brush: xml;"></pre>'
+                            //html: '<pre  class="brush: xml;"></pre>'
                 });
 
                 var form = new Ext.FormPanel({
@@ -90,23 +91,26 @@ Ext.ns('Ext.samples');
                             iconCls: 'play',
                             tooltip: 'Llamar la operaci&oacute;n del servicio',
                             handler: function() {
-                                formreq.getEl().mask("Espere...", "x-mask-loading");
+                                formreq.getEl().mask("Procesando...", "x-mask-loading");
                                 form.getForm().submit({
                                     success: function(form, action) {
                                         var ro = Ext.util.JSON.decode(action.response.responseText);
-                                        formreq.getEl().unmask();
-                                        //formreq.remove(1);
-                                        var grid = Ext.samples.Fields(ro.result);
-//                                        formreq.add({
-//                                            xtype: 'panel',
-//                                            title: 'Resultado',
-//                                            bodyStyle: 'padding:10px',
-//                                            autoScroll: true,
-//                                            height: 200,
-//                                            html: '<code>' + ro.result + '</code>'
-//                                        });
-                                        ppanel.add(grid);
-                                        ppanel.doLayout();
+                                        //console.log(ro.result.length);
+                                        if (ro.result.length !== 0) {
+                                            formreq.getEl().unmask();
+                                            ppanel.removeAll();
+                                            var grid = Ext.samples.Fields(ro.result);
+                                            ppanel.add(grid);
+                                            ppanel.doLayout();
+                                        } else {
+                                            Ext.MessageBox.show({
+                                                title: 'Error',
+                                                msg: 'Error del servidor, no hay datos',
+                                                buttons: Ext.MessageBox.OK,
+                                                icon: Ext.Msg.ERROR
+                                            });
+                                            formreq.getEl().unmask();
+                                        }
                                     },
                                     failure: function(form, action) {
                                         //Ext.Msg.alert('Warning', action.result.errorMessage);
@@ -124,12 +128,12 @@ Ext.ns('Ext.samples');
                             }
                         }]
                 });
-                
+
                 var panel = new Ext.Panel({
-                            layout: 'border',
-                            items: [form, ppanel]
-                        });
-                
+                    layout: 'border',
+                    items: [form, ppanel]
+                });
+
                 formreq.add(panel);
                 formreq.doLayout();
             },

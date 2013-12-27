@@ -148,8 +148,7 @@ domain.ServiceManager = {
             buttons: [{
                     text: 'Guardar',
                     handler: function() {
-                        form.getForm().submit({
-                            waitMsg: 'Uploading your photo...',
+                        form.getForm().submit({                            
                             success: function(form, action) {
                                 options.grid.store.reload();
                                 win.close();
@@ -262,7 +261,7 @@ domain.ServiceManager = {
                             tbar: [{
                                     text: 'Ejecutar',
                                     iconCls: 'play',
-                                    //waitMsg: 'Espere...',
+                                    waitMsg: 'Procesando...',
                                     tooltip: 'Llamar la operaci&oacute;n del servicio',
                                     handler: function() {
                                         options.panelinfo.getEl().mask("Procesando...", "x-mask-loading");
@@ -446,11 +445,6 @@ domain.ServiceManager = {
                     allowBlank: false,
                     name: 'descripcion'
                 }, {
-                    xtype: 'textfield',
-                    fieldLabel: 'Xpath',
-                    allowBlank: false,
-                    name: 'responseXpath'
-                }, {
                     xtype: 'fileuploadfield',
                     emptyText: 'Seleccione una imagen',
                     fieldLabel: 'Imagen',
@@ -459,6 +453,11 @@ domain.ServiceManager = {
                     buttonCfg: {
                         iconCls: 'upload-icon'
                     }
+                }, {
+                    xtype: 'textfield',
+                    fieldLabel: 'Xpath',
+                    allowBlank: false,
+                    name: 'responseXpath'
                 }, {
                     xtype: "hidden",
                     name: "router"
@@ -631,19 +630,20 @@ domain.ServiceManager.View = {
             }),
             {header: "Nombre", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'nombre'},
             {header: "Descripci&oacute;n", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'descripcion'},
-            {header: "Xpath", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'responseXpath'}
-
+            {header: "Xpath", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'responseXpath'},
+            {header: "Servidor", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'router', renderer: function(val) {
+                return val.split(':')[0];
+            }}
         ];
 
-        // declare the source Grid
         var sgrid = new Ext.grid.GridPanel({
             store: sstore,
             height: 200,
             columns: cols,
             region: 'center',
-            enableDragDrop: true,
+            //enableDragDrop: true,
             //stripeRows: true,
-            loadMask: true,
+            loadMask: true,      
             selModel: new Ext.grid.RowSelectionModel({singleSelect: true}),
             title: 'Servicios Definidos',
             tbar: [{
@@ -676,7 +676,6 @@ domain.ServiceManager.View = {
 
 
         var izquierda = new Ext.Panel({
-            //title: 'Informacion',
             layout: 'border',
             region: 'west',
             collapsible: true,
