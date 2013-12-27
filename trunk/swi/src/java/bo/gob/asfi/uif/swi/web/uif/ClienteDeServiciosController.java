@@ -401,7 +401,7 @@ public class ClienteDeServiciosController {
             s.setResponseXpath(serv.getResponseXpath());
 
             if (serv.getImagen() != null && serv.getImagen().getSize() != 0) {
-                byte[] bytes = IOUtils.toByteArray(serv.getImagen().getInputStream());                
+                byte[] bytes = IOUtils.toByteArray(serv.getImagen().getInputStream());
                 //String imagen = new sun.misc.BASE64Encoder().encode(bytes);                                                
                 Base64 encode = new Base64();
                 String imagen = encode.encodeAsString(bytes);
@@ -412,5 +412,17 @@ public class ClienteDeServiciosController {
         } catch (Exception e) {
         }
         return "{success:false}";
+    }
+
+    @RequestMapping(value = "/servidor/{id}", method = RequestMethod.GET)
+    public @ResponseBody
+    Map<String, ? extends Object> servidor(@PathVariable Long id) {
+        Map<String, Object> body = new HashMap<String, Object>();
+
+        Servidor s = dao.get(Servidor.class, id);
+
+        body.put("servidor", s);
+        body.put("success", true);
+        return body;
     }
 }

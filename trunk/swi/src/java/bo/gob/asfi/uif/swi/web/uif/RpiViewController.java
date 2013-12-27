@@ -7,10 +7,14 @@ package bo.gob.asfi.uif.swi.web.uif;
 import bo.gob.asfi.uif.swi.dao.Dao;
 import bo.gob.asfi.uif.swi.model.FormField;
 import bo.gob.asfi.uif.swi.model.Parametro;
+import bo.gob.asfi.uif.swi.model.RpiConfig;
 import bo.gob.asfi.uif.swi.model.RpiField;
 import bo.gob.asfi.uif.swi.model.RpiResultado;
 import bo.gob.asfi.uif.swi.model.UserService;
 import bo.gob.asfi.uif.swi.security.CustomUserDetails;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -37,9 +41,8 @@ public class RpiViewController {
 
     @Autowired
     Dao dao;
-
     private Collection<FormField> rpifields;
-    
+
     @RequestMapping(value = "/rpiview")
     public String rpiView() {
         return "servicios/rpiview";
@@ -53,25 +56,51 @@ public class RpiViewController {
         if (auth.getPrincipal() instanceof CustomUserDetails) {
             CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
             if (ud.getRole().equals("admin_uif")) {
-                lst = dao.findAllServices();//findAll(UserService.class);
+                return allFormRpiItems();//lst = dao.findAllServices();//findAll(UserService.class);
             } else {
                 lst = dao.getUserServices(ud.getId());
             }
         } else {
-            lst = dao.findAllServices();//findAll(UserService.class);
+            return allFormRpiItems();//lst = dao.findAllServices();//findAll(UserService.class);
         }
 
+        return userFormRpiFields(lst);
+    }
+
+    private Collection<FormField> userFormRpiFields(List<UserService> lst) {
+        
         Collection<Parametro> parametros = new ArrayList<Parametro>();
         for (UserService us : lst) {
             if (us.getRpiEnable()) {
-                //extfields.addAll(rpiFormFiendsFromParams(us.getParametros()));
                 parametros.addAll(us.getParametros());
             }
         }
-        return rpiFormFiendsFromParams(parametros);
+        Collection<FormField> userRpifields = rpiFormFiendsFromParams(parametros);
+                
+        Collection<FormField> ls = new ArrayList<FormField>();
+        Collection<FormField> ls1 = allFormRpiItems();
+        for (FormField ff : ls1) {
+            for (FormField uf : userRpifields) {
+                if(ff.getName().equals(uf.getName())) {
+                    ls.add(ff);
+                }
+            }
+        }
+        return ls;
     }
 
-    public Collection<FormField> rpiFormFiendsFromParams(Collection<Parametro> parametros) {
+    private Collection<FormField> allFormRpiItems() {
+        RpiConfig rc = dao.get(RpiConfig.class, 1);
+        if (rc != null) {
+            Type listType = new TypeToken<ArrayList<FormField>>() {
+            }.getType();
+            return new Gson().fromJson(rc.getJsonfields(), listType);
+        } else {
+            return new ArrayList<FormField>();
+        }
+    }
+
+    private Collection<FormField> rpiFormFiendsFromParams(Collection<Parametro> parametros) {
         //Set<FormField> list = new HashSet<FormField>();
         Map<String, FormField> lst = new HashMap<String, FormField>();
         for (Parametro pm : parametros) {
@@ -82,7 +111,6 @@ public class RpiViewController {
                 ff.setValue(pm.getValordefecto());
                 ff.setAllowBlank(!pm.getRequerido());
                 ff.setName(pm.getServicio().getId() + ":" + pm.getNombre());
-                //list.add(ff);
                 lst.put(ff.getName(), ff);
             } else {
                 RpiField rf = dao.get(RpiField.class, pm.getRpifield());
@@ -92,8 +120,6 @@ public class RpiViewController {
                 ff.setValue(rf.getValordefecto());
                 ff.setAllowBlank(!rf.getRequerido());
                 ff.setName("rpifield-" + rf.getId());
-                //ff.setId(rf.getId() + ":rpifield");
-                //list.add(ff);
                 lst.put(ff.getName(), ff);
             }
         }
@@ -109,12 +135,12 @@ public class RpiViewController {
         if (auth.getPrincipal() instanceof CustomUserDetails) {
             CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
             if (ud.getRole().equals("admin_uif")) {
-                lst = dao.findAll(UserService.class);
+                lst = dao.findAllServices();//findAll(UserService.class);
             } else {
                 lst = dao.getUserServices(ud.getId());
             }
         } else {
-            lst = dao.findAll(UserService.class);
+            lst = dao.findAllServices();//findAll(UserService.class);
         }
 
         List<UserService> lst2 = new ArrayList<UserService>();
@@ -148,7 +174,7 @@ public class RpiViewController {
             body.put("success", true);
         } catch (Exception e) {
             body.put("success", false);
-        }        
+        }
         return body;
     }
 

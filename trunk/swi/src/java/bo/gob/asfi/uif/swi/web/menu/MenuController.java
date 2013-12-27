@@ -4,7 +4,6 @@
 package bo.gob.asfi.uif.swi.web.menu;
 
 import bo.gob.asfi.uif.swi.security.CustomUserDetails;
-import com.google.gson.Gson;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
 import java.io.InputStream;
@@ -16,7 +15,6 @@ import net.sf.json.JsonConfig;
 import net.sf.json.util.PropertyFilter;
 import org.heyma.menu.Menu;
 import org.heyma.menu.Module;
-import org.springframework.context.annotation.Scope;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
