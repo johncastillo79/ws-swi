@@ -43,7 +43,7 @@ public class IndividualController {
         Map<String, Object> body = new HashMap<String, Object>();
         try {
             System.out.println(parametro.getOculto());
-            if(parametro.getOculto()) {
+            if (parametro.getOculto()) {
                 parametro.setTipo("hidden");
             }
             dao.update(parametro);
@@ -62,6 +62,22 @@ public class IndividualController {
         try {
             UserService us = dao.get(UserService.class, id);
             us.setResponseXpath(xpath);
+            dao.update(us);
+            body.put("success", true);
+        } catch (Exception e) {
+            body.put("success", false);
+            e.printStackTrace();
+        }
+        return body;
+    }
+
+    @RequestMapping(value = "/setgridcols", method = RequestMethod.POST)
+    public @ResponseBody
+    Map<String, ? extends Object> setGridCols(@RequestParam String config, @RequestParam Integer id) {
+        Map<String, Object> body = new HashMap<String, Object>();
+        try {
+            UserService us = dao.get(UserService.class, id);
+            us.setGridCols(config);
             dao.update(us);
             body.put("success", true);
         } catch (Exception e) {

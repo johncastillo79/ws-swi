@@ -44,6 +44,8 @@ public class UserService implements Serializable {
     private String textImage;
     @Lob
     private String requestXmlTemplate;
+    @Lob
+    private String gridCols;
     private String responseXpath;
     private Boolean rpiEnable = false;
     @OneToMany(mappedBy = "servicio", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
@@ -160,5 +162,13 @@ public class UserService implements Serializable {
 
     public void setTextImage(String textImage) {
         this.textImage = textImage;
+    }
+
+    public String getGridCols() {
+        return gridCols;
+    }
+
+    public void setGridCols(String gridCols) {
+        this.gridCols = gridCols;
     }
 }

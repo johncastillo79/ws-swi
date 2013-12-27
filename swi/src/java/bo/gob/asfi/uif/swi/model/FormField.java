@@ -13,7 +13,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 public class FormField extends org.heyma.core.extjs.components.FormField {
 
-    private String id;
+    private String id;    
 
     public String getId() {
         return id;
