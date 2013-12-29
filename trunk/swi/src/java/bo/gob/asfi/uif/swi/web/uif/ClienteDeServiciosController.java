@@ -383,11 +383,17 @@ public class ClienteDeServiciosController {
     public @ResponseBody
     Map<String, ? extends Object> eliminarServicio(@RequestParam Integer id) {
         Map<String, Object> body = new HashMap<String, Object>();
-
-        UserService s = dao.get(UserService.class, id);
-        dao.remove(s);
-
-        body.put("success", true);
+        try {
+            UserService s = dao.get(UserService.class, id);
+            dao.remove(s);
+            body.put("success", true);
+            return body;
+        } catch (DataIntegrityViolationException e) {
+            body.put("message", "El servicio está asignado a usuarios..");
+        } catch (Exception e) {
+            body.put("message", "Error del servidor");
+        }
+        body.put("success", false);
         return body;
     }
 

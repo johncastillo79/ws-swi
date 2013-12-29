@@ -226,7 +226,8 @@ public class WebServiceRequestController {
         SOAPMessage message = factory.createMessage(new MimeHeaders(), new ByteArrayInputStream(xml.getBytes(Charset.forName("UTF-8"))));
         return message;
     }
-
+    
+    @Deprecated
     private String printSOAPResponse(SOAPMessage soapResponse) throws Exception {
         StringWriter writer2 = new StringWriter();
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -283,8 +284,16 @@ public class WebServiceRequestController {
             SOAPConnection soapConnection = soapConnectionFactory.createConnection();
             SOAPMessage soapResponse = soapConnection.call(getSoapMessageFromString(writer2.toString()), url);
 
-            String response = prettyFormat(printSOAPResponse(soapResponse), 2);
+            //String response = prettyFormat(printSOAPResponse(soapResponse), 2);
+            //this.xml = response;
+            
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            soapResponse.writeTo(out);
+            String strMsg = new String(out.toByteArray());
+            //String response = prettyFormat(printSOAPResponse(soapResponse), 2);
+            String response = prettyFormat(strMsg, 2);
             this.xml = response;
+            
 
             response = response.replaceAll("<", "&lt;");
             response = response.replaceAll(">", "&gt;");
@@ -347,7 +356,12 @@ public class WebServiceRequestController {
             SOAPConnection soapConnection = soapConnectionFactory.createConnection();
             SOAPMessage soapResponse = soapConnection.call(getSoapMessageFromString(writer2.toString()), url);
 
-            String response = prettyFormat(printSOAPResponse(soapResponse), 2);
+            
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            soapResponse.writeTo(out);
+            String strMsg = new String(out.toByteArray());
+            //String response = prettyFormat(printSOAPResponse(soapResponse), 2);
+            String response = prettyFormat(strMsg, 2);
             this.xml = response;
 
             //response = response.replaceAll("<", "&lt;");
