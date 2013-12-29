@@ -119,7 +119,7 @@ public class WebServiceRequestController {
             Map<String, String> map = sp.extract(writer.toString());
 
             for (Entry<String, Object> entry : params.entrySet()) {
-                map.put("xpath:/" + routerparts[3] + "/" + entry.getKey(), entry.getValue().toString());
+                map.put("xpath:/" + routerparts[3] + "/" + entry.getKey(), entry.getValue() == null ? "" : entry.getValue().toString());
             }
 
             StringWriter writer2 = new StringWriter();
@@ -187,23 +187,22 @@ public class WebServiceRequestController {
         return builder.parse(new InputSource(new StringReader(xmlSource)));
     }
 
-    
     public static String prettyFormat(String input, int indent) {
-    try {
-        Source xmlInput = new StreamSource(new StringReader(input));
-        StringWriter stringWriter = new StringWriter();
-        StreamResult xmlOutput = new StreamResult(stringWriter);
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-        transformerFactory.setAttribute("indent-number", indent);
-        Transformer transformer = transformerFactory.newTransformer(); 
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.transform(xmlInput, xmlOutput);
-        return xmlOutput.getWriter().toString();
-    } catch (Exception e) {
-        throw new RuntimeException(e); // simple exception handling, please review it
+        try {
+            Source xmlInput = new StreamSource(new StringReader(input));
+            StringWriter stringWriter = new StringWriter();
+            StreamResult xmlOutput = new StreamResult(stringWriter);
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            transformerFactory.setAttribute("indent-number", indent);
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.transform(xmlInput, xmlOutput);
+            return xmlOutput.getWriter().toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e); // simple exception handling, please review it
+        }
     }
-}
-    
+
     //method to convert Document to String
     public String getStringFromDocument(Document doc) {
         try {
@@ -226,7 +225,7 @@ public class WebServiceRequestController {
         SOAPMessage message = factory.createMessage(new MimeHeaders(), new ByteArrayInputStream(xml.getBytes(Charset.forName("UTF-8"))));
         return message;
     }
-    
+
     @Deprecated
     private String printSOAPResponse(SOAPMessage soapResponse) throws Exception {
         StringWriter writer2 = new StringWriter();
@@ -267,7 +266,7 @@ public class WebServiceRequestController {
             Map<String, String> map = sp.extract(writer.toString());
 
             for (Entry<String, Object> entry : params.entrySet()) {
-                map.put("xpath:/" + routerparts[3] + "/" + entry.getKey(), entry.getValue().toString());
+                map.put("xpath:/" + routerparts[3] + "/" + entry.getKey(), entry.getValue() == null ? "" : entry.getValue().toString());
             }
 
             StringWriter writer2 = new StringWriter();
@@ -286,14 +285,14 @@ public class WebServiceRequestController {
 
             //String response = prettyFormat(printSOAPResponse(soapResponse), 2);
             //this.xml = response;
-            
+
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             soapResponse.writeTo(out);
             String strMsg = new String(out.toByteArray());
             //String response = prettyFormat(printSOAPResponse(soapResponse), 2);
             String response = prettyFormat(strMsg, 2);
             this.xml = response;
-            
+
 
             response = response.replaceAll("<", "&lt;");
             response = response.replaceAll(">", "&gt;");
@@ -310,13 +309,13 @@ public class WebServiceRequestController {
         return body;
         //return "xml";
     }
-    
+
     @RequestMapping(value = "/cachexml", method = RequestMethod.GET)
     public String cacheXml(Model model) {
         model.addAttribute("result", this.xml);//.substring(40, this.xml.length()));      
         return "xml";
     }
-    
+
     @RequestMapping(value = "/webserviceworld1", method = RequestMethod.POST)
     public @ResponseBody
     Map<String, ? extends Object> /*String*/ webServiceWorldRequest1(Model model, HttpServletRequest request) {
@@ -339,7 +338,7 @@ public class WebServiceRequestController {
             Map<String, String> map = sp.extract(writer.toString());
 
             for (Entry<String, Object> entry : params.entrySet()) {
-                map.put("xpath:/" + routerparts[3] + "/" + entry.getKey(), entry.getValue().toString());
+                map.put("xpath:/" + routerparts[3] + "/" + entry.getKey(), entry.getValue() == null ? "" : entry.getValue().toString());
             }
 
             StringWriter writer2 = new StringWriter();
@@ -356,7 +355,7 @@ public class WebServiceRequestController {
             SOAPConnection soapConnection = soapConnectionFactory.createConnection();
             SOAPMessage soapResponse = soapConnection.call(getSoapMessageFromString(writer2.toString()), url);
 
-            
+
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             soapResponse.writeTo(out);
             String strMsg = new String(out.toByteArray());
@@ -366,7 +365,7 @@ public class WebServiceRequestController {
 
             //response = response.replaceAll("<", "&lt;");
             //response = response.replaceAll(">", "&gt;");
-            
+
             List<Map<String, String>> lst = new SOAPProcessor().parseXML(response, params.get("__xpath_swi_var").toString());
 
             body.put("result", lst);
