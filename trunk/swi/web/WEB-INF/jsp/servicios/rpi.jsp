@@ -75,7 +75,6 @@
                     var tree = new Ext.tree.TreePanel({
                         title: 'Servicios disponibles',
                         region: 'east',
-                        //height: 300,
                         width: 300,
                         minWidth: 250,
                         maxWidth: 400,
@@ -87,7 +86,6 @@
                         rootVisible: false,
                         split: true,
                         collapsible: true,
-                        //frame: true,
                         root: {
                             nodeType: 'async'
                         },
@@ -100,26 +98,7 @@
                                     node.getUI().removeClass('complete');
                                 }
                             }
-                        }//,
-//                        buttons: [{
-//                                text: 'Get Completed Tasks',
-//                                handler: function() {
-//                                    var msg = '', selNodes = tree.getChecked();
-//                                    Ext.each(selNodes, function(node) {
-//                                        if (msg.length > 0) {
-//                                            msg += ', ';
-//                                        }
-//                                        msg += node.text;
-//                                    });
-//                                    Ext.Msg.show({
-//                                        title: 'Completed Tasks',
-//                                        msg: msg.length > 0 ? msg : 'None',
-//                                        icon: Ext.Msg.INFO,
-//                                        minWidth: 200,
-//                                        buttons: Ext.Msg.OK
-//                                    });
-//                                }
-//                            }]
+                        }
                     });
 
                     var win = new Ext.Window({
@@ -367,6 +346,19 @@
 
                     fsloadRpi();
 
+                    var moveField = function(name, dir) {
+                        Ext.Ajax.request({
+                            url: Ext.SROOT + 'rpi/movefield',
+                            method: 'POST',
+                            params: {name: name, dir: dir},
+                            success: function(result, request) {
+                                fsloadRpiAll();
+                            },
+                            failure: function(result, request) {
+
+                            }
+                        });
+                    };
 
                     var fsloadRpiAll = function() {
                         Ext.Ajax.request({
@@ -389,14 +381,14 @@
                                                 iconCls: 'arrow-up',
                                                 tooltip: 'Subir',
                                                 handler: function() {
-
+                                                    moveField(field.name, 'up');
                                                 }
                                             }, {
                                                 xtype: 'button',
                                                 iconCls: 'arrow-down',
                                                 tooltip: 'Bajar',
                                                 handler: function() {
-
+                                                    moveField(field.name, 'down');
                                                 }
                                             }]
                                     };

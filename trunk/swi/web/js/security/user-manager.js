@@ -131,7 +131,7 @@ domain.UserManager = {
     },
     deleteUser: function(options) {
         Ext.MessageBox.confirm('Confirmar', '¿Confirma eliminar el registro? Se perderan Datos.', function(r) {
-            if (r == 'yes') {
+            if (r === 'yes') {
                 var id = options.record.data.funcionario_id;
                 //var box = Ext.MessageBox.wait('Por favor espere.', 'Eliminando el <b>registro</b>'); 
                 Ext.Ajax.request({
@@ -411,7 +411,7 @@ domain.UserManager = {
                             checked: true
                         }, {
                             xtype: 'checkbox',
-                            fieldLabel: 'Privilegio de lectura',
+                            fieldLabel: 'Visualizar consultas de otros usuarios',
                             name: 'plus'
                         }, {
                             xtype: 'datefield',

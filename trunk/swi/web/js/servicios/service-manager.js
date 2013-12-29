@@ -48,40 +48,90 @@ domain.errors = {
     }
 };
 
-domain.formButtons = function(options) {
-    return [{
-            text: 'Guardar',
-            iconCls: 'entity-save',
-            formBind: true,
-            handler: function() {
-                options.form.getForm().submit({
-                    //waitMsg : 'Guardando...',
-                    success: function(form, action) {
-                        options.grid.getStore().reload();
-                        options.win.close();
-                    },
-                    failure: function(form, action) {
-                        //Ext.Msg.alert('Warning', action.result.errorMessage);
-                        //options.error('Error interno',action.result.errorMessage);
-                        domain.errors.submitFailure('Error interno', action.result.errorMessage);
-                    }
-                });
-            }
-        }, {
-            text: 'Deshacer',
-            iconCls: 'entity-undo',
-            handler: function() {
-                options.form.getForm().reset();
-            }
-        }, '->', {
-            text: 'Cerrar',
-            handler: function() {
-                options.win.close();
-            }
-        }];
-};
-
 domain.ServiceManager = {
+    Fields: function(data, gridcfg) {
+        if (data.length > 0) {
+            var cols = new Array();
+            var fields = new Array();
+            for (var prop in data[0]) {
+                if (prop !== '_root_') {
+                    if (gridcfg) {
+                        if (gridcfg[prop] !== '') {
+                            cols.push({
+                                header: gridcfg[prop],
+                                dataIndex: prop,
+                                sortable: true
+                            });
+                        }
+                    } else {
+                        cols.push({
+                            header: prop,
+                            dataIndex: prop,
+                            sortable: true
+                        });
+                    }
+                }
+                var field = {
+                    name: prop
+                };
+                fields.push(field)
+            }
+
+            var grid = new Ext.grid.GridPanel({
+                title: 'Resultados',
+                selModel: new Ext.grid.RowSelectionModel({singleSelect: true}),
+                store: new Ext.data.JsonStore({
+                    fields: fields,
+                    data: data,
+                    autoLoad: true
+                }),
+                columns: cols
+            });
+            return grid;
+        }
+        return null;
+    },
+    gridFields: function(data, id, gridcfg) {
+        if (data.length > 0) {
+            var source = new Object();
+            for (var prop in data[0]) {
+                if (prop !== '_root_') {
+                    source[prop] = gridcfg[prop] !== null ? gridcfg[prop] : prop;
+                }
+            }
+
+            var propsGrid = new Ext.grid.PropertyGrid({                
+                tbar: [{
+                        text: 'Guardar',
+                        iconCls: 'entity-save',
+                        handler: function() {
+                            Ext.Ajax.request({
+                                url: Ext.SROOT + 'individual/setgridcols',
+                                method: 'POST',
+                                params: {
+                                    id: id,
+                                    config: Ext.util.JSON.encode(propsGrid.source)
+                                },
+                                success: function(result, request) {
+                                    Ext.MessageBox.show({
+                                        title: 'Aviso',
+                                        msg: 'Se ha guardado correctamente. Vuelva a ejecutar.',
+                                        buttons: Ext.MessageBox.OK,
+                                        icon: Ext.Msg.INFO
+                                    });
+                                },
+                                failure: function(result, request) {
+
+                                }
+                            });
+                        }
+                    }],
+                source: source
+            });
+            return propsGrid;
+        }
+        return null;
+    },
     definirServicio: function(options) {
         var form = new Ext.FormPanel({
             url: Ext.SROOT + 'definirservicio',
@@ -116,7 +166,7 @@ domain.ServiceManager = {
                     xtype: 'textfield',
                     fieldLabel: 'Xpath',
                     allowBlank: false,
-                    value: '/',
+                    value: options.xpath ? options.xpath : '/',
                     name: 'responseXpath'
                 }, {
                     xtype: "hidden",
@@ -148,7 +198,7 @@ domain.ServiceManager = {
             buttons: [{
                     text: 'Guardar',
                     handler: function() {
-                        form.getForm().submit({                            
+                        form.getForm().submit({
                             success: function(form, action) {
                                 options.grid.store.reload();
                                 win.close();
@@ -192,6 +242,7 @@ domain.ServiceManager = {
     reloadService: function(options) {
         if (options.node.attributes.iconCls === 'server') {
             var item = options.node.attributes;
+            options.tree.getEl().mask("Procesando...", "x-mask-loading");
             Ext.Ajax.request({
                 url: Ext.SROOT + 'reloadservidor',
                 method: 'POST',
@@ -200,9 +251,11 @@ domain.ServiceManager = {
                 },
                 success: function(result, request) {
                     options.tree.getRootNode().reload();
+                    options.tree.getEl().unmask();
+                    //options.node.expand(true, true);
                 },
                 failure: function(result, request) {
-
+                    options.tree.getEl().unmask();
                 }
             });
         } else {
@@ -241,6 +294,13 @@ domain.ServiceManager = {
                             bodyStyle: 'padding:10px',
                             autoScroll: true,
                             height: 200,
+                            tbar: [{
+                                    text: 'Abrir xml',
+                                    iconCls: 'open',
+                                    handler: function() {
+                                        window.open('cachexml', '', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,copyhistory=no,width=800,height=530,screenX=50,screenY=50,top=50,left=200');
+                                    }
+                                }],
                             html: '<pre  class="brush: xml;"></pre>'
                         });
 
@@ -261,7 +321,6 @@ domain.ServiceManager = {
                             tbar: [{
                                     text: 'Ejecutar',
                                     iconCls: 'play',
-                                    waitMsg: 'Procesando...',
                                     tooltip: 'Llamar la operaci&oacute;n del servicio',
                                     handler: function() {
                                         options.panelinfo.getEl().mask("Procesando...", "x-mask-loading");
@@ -269,32 +328,14 @@ domain.ServiceManager = {
                                         Ext.Ajax.request({
                                             url: Ext.SROOT + 'webserviceworld',
                                             method: 'POST',
-                                            waitMsg: 'Enviando...',
                                             params: form.getForm().getValues(),
                                             success: function(result, request) {
                                                 options.panelinfo.getEl().unmask();
                                                 var serviceResponse = Ext.util.JSON.decode(result.responseText);
                                                 ppanel.body.update('<pre class="brush: xml;">' + serviceResponse.result + '</pre>');
-
-//                                            options.panelinfo.remove(1);
-//                                            var ppanel = new Ext.Panel({
-//                                                xtype: 'panel',
-//                                                title: 'Resultado',
-//                                                bodyStyle: 'padding:10px',
-//                                                autoScroll: true,
-//                                                height: 200,
-//                                                html: '<pre  class="brush: xml;">' + serviceResponse.result + '</pre>'
-//                                            });
-//                                            options.panelinfo.add(ppanel);
-                                                //ppanel.body.update('<pre class="brush: xml;">' + result.responseText + '</pre>');
-//                                            options.panelinfo.doLayout();
-                                                //win.doLayout();
                                             },
                                             failure: function(result, request) {
                                                 options.panelinfo.getEl().unmask();
-                                                console.log(result);
-                                                //var r = Ext.util.JSON.decode(action.response.responseText);
-                                                //com.icg.errors.submitFailure('Error', r.message);
 
                                                 Ext.MessageBox.show({
                                                     title: 'Error',
@@ -304,9 +345,6 @@ domain.ServiceManager = {
                                                 });
                                             }
                                         });
-
-
-
                                     }
                                 }, '-', {
                                     text: 'Definir Servicio',
@@ -316,9 +354,67 @@ domain.ServiceManager = {
                                         domain.ServiceManager.definirServicio({
                                             router: item.id,
                                             url: item.url,
-                                            grid: options.grid
+                                            grid: options.grid,
+                                            xpath: Ext.getCmp('___xpath').getValue()
                                         });
                                     }
+                                }, '-', {
+                                    text: 'Ejecutar con XPath',
+                                    iconCls: 'play',                                    
+                                    tooltip: 'Ejecupa la operaci&oacute;n aplicando XPath',
+                                    handler: function() {
+                                        options.panelinfo.getEl().mask("Procesando...", "x-mask-loading");
+                                        ppanel.body.update('<pre class="brush: xml;"></pre>');
+                                        var pparams = form.getForm().getValues();
+                                        pparams['__xpath_swi_var'] = Ext.getCmp('___xpath').getValue();
+//                                        console.log(pparams);
+                                        if (Ext.getCmp('___xpath').getValue()) {
+                                            Ext.Ajax.request({
+                                                url: Ext.SROOT + 'webserviceworld1',
+                                                method: 'POST',                                                
+                                                params: pparams,
+                                                success: function(result, request) {
+                                                    options.panelinfo.getEl().unmask();
+                                                    var ro = Ext.util.JSON.decode(result.responseText);                                                    
+                                                    options.panelinfo.getEl().unmask();
+                                                    if (ro.result.length !== 0) {                                                        
+                                                        ppanel.removeAll();
+                                                        var grid = domain.ServiceManager.Fields(ro.result, null);
+                                                        ppanel.add(grid);
+                                                        ppanel.doLayout();
+                                                    } else {
+                                                        Ext.MessageBox.show({
+                                                            title: 'Error',
+                                                            msg: 'Error del servidor, no hay datos',
+                                                            buttons: Ext.MessageBox.OK,
+                                                            icon: Ext.Msg.ERROR
+                                                        });                                                        
+                                                    }
+                                                },
+                                                failure: function(result, request) {
+                                                    options.panelinfo.getEl().unmask();
+                                                    Ext.MessageBox.show({
+                                                        title: 'Error',
+                                                        msg: 'Error del servidor',
+                                                        buttons: Ext.MessageBox.OK,
+                                                        icon: Ext.Msg.ERROR
+                                                    });
+                                                }
+                                            });
+                                        } else {
+                                            Ext.MessageBox.show({
+                                                title: 'Error',
+                                                msg: 'Error al ejecutar XPath',
+                                                buttons: Ext.MessageBox.OK,
+                                                icon: Ext.Msg.ERROR
+                                            });
+                                        }
+                                    }
+                                }, {
+                                    xtype: 'textfield',
+                                    width: 300,
+                                    value: '/',
+                                    id: '___xpath'
                                 }]
                         });
 
@@ -386,19 +482,21 @@ domain.ServiceManager = {
                     text: 'Guardar',
                     handler: function() {
                         var button = this;
-                        button.disabled = true;
-                        form.getForm().submit({
-                            waitMsg: 'Leyendo WSDL...',
-                            success: function(form, action) {
-                                options.tree.getRootNode().reload();
-                                win.close();
-                            },
-                            failure: function(form, action) {
-                                domain.errors.submitFailure('Error', action.result.message);
-                                //console.log(action);
-                                button.disabled = false;
-                            }
-                        });
+                        if (form.getForm().isValid()) {
+                            button.disabled = true;
+                            form.getForm().submit({
+                                waitMsg: 'Leyendo WSDL...',
+                                success: function(form, action) {
+                                    options.tree.getRootNode().reload();
+                                    win.close();
+                                },
+                                failure: function(form, action) {
+                                    domain.errors.submitFailure('Error', action.result.message);
+                                    //console.log(action);
+                                    button.disabled = false;
+                                }
+                            });
+                        }
                     }
                 }]
         });
@@ -414,7 +512,12 @@ domain.ServiceManager = {
                         id: rec.data.id
                     },
                     success: function(result, request) {
-                        grid.store.reload();
+                        var r = Ext.util.JSON.decode(result.responseText);
+                        if (r.success) {
+                            grid.store.reload();
+                        } else {
+                            domain.errors.submitFailure('Error', r.message);
+                        }
                     },
                     failure: function(result, request) {
 
@@ -501,6 +604,128 @@ domain.ServiceManager = {
                 }]
         });
         win.show();
+    },
+    requestForm: function(options) {
+        var formreq = options.panelinfo;//Ext.getCmp('form_request');
+        formreq.removeAll();
+        Ext.Ajax.request({
+            url: Ext.SROOT + 'paneldeservicios/formserviceitems',
+            method: 'POST',
+            params: {
+                id: options.id
+            },
+            success: function(result, request) {
+                var sfields = Ext.util.JSON.decode(result.responseText);
+                sfields.push({
+                    xtype: 'hidden',
+                    name: '_swi_userservice_id_',
+                    value: options.id
+                });
+
+                var ppanel = new Ext.Panel({
+                    xtype: 'panel',
+                    region: 'center',
+                    border: false,
+                    layout: 'fit'
+                });
+
+                var form = new Ext.FormPanel({
+                    url: Ext.SROOT + 'webservicesystem',
+                    border: false,
+                    autoHeight: true,
+                    region: 'north',
+                    bodyStyle: 'padding:10px',
+                    labelWidth: 130,
+                    frame: true,
+                    labelAlign: 'top',
+                    defaults: {
+                        msgTarget: 'side'
+                    },
+                    items: sfields,
+                    tbar: [{
+                            text: 'Ejecutar',
+                            iconCls: 'play',
+                            tooltip: 'Llamar la operaci&oacute;n del servicio',
+                            handler: function() {
+                                formreq.getEl().mask("Procesando...", "x-mask-loading");
+                                form.getForm().submit({
+                                    success: function(form, action) {
+                                        formreq.getEl().unmask();
+                                        var ro = Ext.util.JSON.decode(action.response.responseText);
+                                        if (ro.gridcfg) {
+                                            ro.gridcfg = Ext.util.JSON.decode(ro.gridcfg);
+                                        } else {
+                                            ro.gridcfg = {};
+                                        }
+                                        //console.log(ro.gridcfg);
+                                        if (ro.result.length !== 0) {
+                                            ppanel.removeAll();
+                                            var grid = domain.ServiceManager.Fields(ro.result, ro.gridcfg);
+                                            ppanel.add(grid);
+                                            //ppanel.add(gridp);
+                                            var tb = new Ext.Toolbar();
+                                            grid.add(tb);
+                                            tb.add({
+                                                text: 'Configurar columnas',
+                                                iconCls: 'settings',
+                                                handler: function() {
+                                                    var gridp = domain.ServiceManager.gridFields(ro.result, options.id, ro.gridcfg);
+                                                    var win = new Ext.Window({
+                                                        title: 'Configurar columnas',
+                                                        iconCls:'settings',
+                                                        autoScroll: true,
+                                                        height: 300,
+                                                        width: 500,
+                                                        layout: 'fit',
+                                                        items: [gridp],
+                                                        modal: true,                                                        
+                                                        buttons: [{
+                                                                text: 'Cancelar',
+                                                                handler: function() {
+                                                                    win.close();
+                                                                }
+                                                            }]
+                                                    });
+                                                    win.show();
+                                                }
+                                            });
+
+                                            ppanel.doLayout();
+                                        } else {
+                                            Ext.MessageBox.show({
+                                                title: 'Error',
+                                                msg: 'Error del servidor, no hay datos',
+                                                buttons: Ext.MessageBox.OK,
+                                                icon: Ext.Msg.ERROR
+                                            });
+                                        }
+                                    },
+                                    failure: function(form, action) {
+                                        formreq.getEl().unmask();
+                                        Ext.MessageBox.show({
+                                            title: 'Error',
+                                            msg: 'Error del servidor',
+                                            buttons: Ext.MessageBox.OK,
+                                            icon: Ext.Msg.ERROR
+                                        });
+                                    }
+                                });
+                            }
+                        }]
+                });
+
+                var panel = new Ext.Panel({
+                    layout: 'border',
+                    items: [form, ppanel]
+                });
+
+                formreq.add(panel);
+                formreq.doLayout();
+            },
+            failure: function(result, request) {
+
+            }
+        });
     }
 };
 
@@ -512,7 +737,7 @@ domain.ServiceManager.View = {
             iconCls: 'server',
             region: 'north',
             autoScroll: true,
-            height: 350,
+            height: 250,
             split: true,
             collapsible: true,
             animate: true,
@@ -532,24 +757,41 @@ domain.ServiceManager.View = {
                         tree.getRootNode().reload();
                     }
                 }, '-', {
-                    text: 'Nuevo',
-                    iconCls: 'server-add',
-                    tooltip: 'Nuevo servicio',
-                    handler: function() {
-                        domain.ServiceManager.newService({tree: tree});
-                    }
-                }, {
-                    text: 'Eliminar',
-                    iconCls: 'server-delete',
-                    tooltip: 'Eliminar servicio',
-                    handler: function() {
-                        var record = tree.getSelectionModel().getSelectedNode();
-                        if (record) {
-                            domain.ServiceManager.deleteService({node: record, tree: tree});
-                        } else {
-                            domain.errors.mustSelect();
-                        }
-                    }
+                    text: 'Archivo',
+                    menu: {
+                        items: [{
+                                text: 'Nuevo servidor...',
+                                iconCls: 'server-add',
+                                tooltip: 'Nuevo servicio',
+                                handler: function() {
+                                    domain.ServiceManager.newService({tree: tree});
+                                }
+                            }, {
+                                text: 'Eliminar servidor',
+                                iconCls: 'server-delete',
+                                tooltip: 'Elimina la fuete de informaci&oacute;n',
+                                handler: function() {
+                                    var record = tree.getSelectionModel().getSelectedNode();
+                                    if (record) {
+                                        domain.ServiceManager.deleteService({node: record, tree: tree});
+                                    } else {
+                                        domain.errors.mustSelect();
+                                    }
+                                }
+                            }, '-', {
+                                iconCls: 'page-refresh',
+                                text: 'Recargar',
+                                tooltip: 'Actualiza la estructura desde el servidor original',
+                                handler: function() {
+                                    var record = tree.getSelectionModel().getSelectedNode();
+                                    if (record) {
+                                        domain.ServiceManager.reloadService({node: record, tree: tree});
+                                    } else {
+                                        domain.errors.mustSelect();
+                                    }
+                                }
+                            }
+                        ]}
                 }, '-', {
                     iconCls: 'drink',
                     text: 'Expandir',
@@ -568,20 +810,9 @@ domain.ServiceManager.View = {
                         tree.getRootNode().reload();
                         //tree.getRootNode().expand(true);
                     }
-                }, {
-                    iconCls: 'page-refresh',
-                    text: 'Recargar',
-                    handler: function() {
-                        var record = tree.getSelectionModel().getSelectedNode();
-                        if (record) {
-                            domain.ServiceManager.reloadService({node: record, tree: tree});
-                        } else {
-                            domain.errors.mustSelect();
-                        }
-                    }
-                }, {
-                    text: 'Abrir',
-                    iconCls: 'open',
+                }, '-', {
+                    text: 'Abrir ejecutar',
+                    iconCls: 'play',
                     tooltip: 'Abrir Operaci&oacute;n',
                     handler: function() {
                         var record = tree.getSelectionModel().getSelectedNode();
@@ -632,8 +863,8 @@ domain.ServiceManager.View = {
             {header: "Descripci&oacute;n", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'descripcion'},
             {header: "Xpath", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'responseXpath'},
             {header: "Servidor", width: 150, autoExpandColumn: true, sortable: true, dataIndex: 'router', renderer: function(val) {
-                return val.split(':')[0];
-            }}
+                    return val.split(':')[0];
+                }}
         ];
 
         var sgrid = new Ext.grid.GridPanel({
@@ -641,9 +872,7 @@ domain.ServiceManager.View = {
             height: 200,
             columns: cols,
             region: 'center',
-            //enableDragDrop: true,
-            //stripeRows: true,
-            loadMask: true,      
+            loadMask: true,
             selModel: new Ext.grid.RowSelectionModel({singleSelect: true}),
             title: 'Servicios Definidos',
             tbar: [{
@@ -667,6 +896,21 @@ domain.ServiceManager.View = {
                         var record = sgrid.getSelectionModel().getSelected();
                         if (record) {
                             domain.ServiceManager.deleteServiceDef(record, sgrid);
+                        } else {
+                            domain.errors.mustSelect();
+                        }
+                    }
+                }, '-', {
+                    text: 'Abrir ejecutar',
+                    iconCls: 'play',
+                    handler: function() {
+                        var record = sgrid.getSelectionModel().getSelected();
+                        if (record) {
+                            //domain.ServiceManager.deleteServiceDef(record, sgrid);
+                            domain.ServiceManager.requestForm({
+                                panelinfo: serviceInfoPanel,
+                                id: record.data.id
+                            })
                         } else {
                             domain.errors.mustSelect();
                         }

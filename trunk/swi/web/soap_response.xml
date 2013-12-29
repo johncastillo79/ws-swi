@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <soap:Body>
+        <ListAllArtistsResponse xmlns="http://localhost/">
+            <ListAllArtistsResult>
+                <Artist>
+                    <Albums>
+                        <Album>
+                            <Name>hi</Name>
+                            <SongNames>
+                                <string>foo</string>
+                                <string>bar</string>
+                                <string>baz</string>
+                            </SongNames>
+                        </Album>
+                        <Album>
+                            <Name>hi</Name>
+                            <SongNames>
+                                <string>foo</string>
+                                <string>bar</string>
+                                <string>baz</string>
+                            </SongNames>
+                        </Album>
+                    </Albums>
+                    <Name>Mr Guy</Name>
+                </Artist>
+                <Artist>
+                    <Albums>
+                        <Album>
+                            <Name>salut</Name>
+                            <SongNames>
+                                <string>green</string>
+                                <string>orange</string>
+                                <string>red</string>
+                            </SongNames>
+                        </Album>
+                    </Albums>
+                    <Name>Mr Buddy</Name>
+                </Artist>
+                <Artist>
+                    <Albums>
+                        <Album>
+                            <Name>hey</Name>
+                            <SongNames>
+                                <string>brown</string>
+                                <string>pink</string>
+                                <string>blue</string>
+                            </SongNames>
+                        </Album>
+                        <Album>
+                            <Name>hello</Name>
+                            <SongNames>
+                                <string>apple</string>
+                                <string>orange</string>
+                                <string>pear</string>
+                            </SongNames>
+                        </Album>
+                    </Albums>
+                    <Name>Mr Friend</Name>
+                </Artist>
+            </ListAllArtistsResult>
+        </ListAllArtistsResponse>
+    </soap:Body>
+</soap:Envelope>
