@@ -10,18 +10,33 @@ Ext.ns('Ext.samples');
 
 (function() {
 
-    Ext.samples.Fields = function(data) {
+    Ext.samples.Fields = function(data, gridcfg) {
         if (data.length > 0) {
-            var cols = new Array();
+            var cols = new Array();  
+            if(data.length > 5) {
+                cols.push(new Ext.grid.RowNumberer({
+                    width: 29
+                }));
+            }
             var fields = new Array();
             for (var prop in data[0]) {
-                //console.log("key:" + prop);
-                var col = {
-                    header: prop,
-                    dataIndex: prop,
-                    sortable: true
-                };
-                cols.push(col);
+                if (prop !== '_root_') {
+                    if (gridcfg) {
+                        if (gridcfg[prop] !== '') {
+                            cols.push({
+                                header: gridcfg[prop],
+                                dataIndex: prop,
+                                sortable: true
+                            });
+                        }
+                    } else {
+                        cols.push({
+                            header: prop,
+                            dataIndex: prop,
+                            sortable: true
+                        });
+                    }
+                }
                 var field = {
                     name: prop
                 };
@@ -30,8 +45,6 @@ Ext.ns('Ext.samples');
 
             var grid = new Ext.grid.GridPanel({
                 title: 'Resultados',
-                //width: 400,
-                //height: 190,
                 store: new Ext.data.JsonStore({
                     fields: fields,
                     data: data,
@@ -94,12 +107,15 @@ Ext.ns('Ext.samples');
                                 formreq.getEl().mask("Procesando...", "x-mask-loading");
                                 form.getForm().submit({
                                     success: function(form, action) {
+                                        formreq.getEl().unmask();
                                         var ro = Ext.util.JSON.decode(action.response.responseText);
-                                        //console.log(ro.result.length);
+                                        if (ro.gridcfg) {
+                                            ro.gridcfg = Ext.util.JSON.decode(ro.gridcfg);
+                                        }
+                                        //console.log(ro.gridcfg);
                                         if (ro.result.length !== 0) {
-                                            formreq.getEl().unmask();
                                             ppanel.removeAll();
-                                            var grid = Ext.samples.Fields(ro.result);
+                                            var grid = Ext.samples.Fields(ro.result, ro.gridcfg);
                                             ppanel.add(grid);
                                             ppanel.doLayout();
                                         } else {
@@ -109,13 +125,9 @@ Ext.ns('Ext.samples');
                                                 buttons: Ext.MessageBox.OK,
                                                 icon: Ext.Msg.ERROR
                                             });
-                                            formreq.getEl().unmask();
                                         }
                                     },
                                     failure: function(form, action) {
-                                        //Ext.Msg.alert('Warning', action.result.errorMessage);
-                                        //options.error('Error interno',action.result.errorMessage);
-                                        //domain.errors.submitFailure('Error interno', action.result.errorMessage);
                                         formreq.getEl().unmask();
                                         Ext.MessageBox.show({
                                             title: 'Error',

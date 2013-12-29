@@ -28,7 +28,8 @@
                             console.log("key:" + prop);
                             var col = {
                                 header: prop,
-                                dataIndex: prop
+                                dataIndex: prop,
+                                sortable: true
                             };
                             cols.push(col);
                             var field = {
