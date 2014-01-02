@@ -30,7 +30,16 @@ public class CustomUserDetails implements UserDetails {
     private String nombre;
     private String apellido;
     private String role;
+    private Boolean plus;
     private List menu;
+
+    public Boolean getPlus() {
+        return plus;
+    }
+
+    public void setPlus(Boolean plus) {
+        this.plus = plus;
+    }
 
     public Integer getId() {
         return id;

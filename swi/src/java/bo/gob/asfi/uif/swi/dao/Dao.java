@@ -4,6 +4,7 @@
  */
 package bo.gob.asfi.uif.swi.dao;
 
+import bo.gob.asfi.uif.swi.model.RpiResultado;
 import bo.gob.asfi.uif.swi.model.UserService;
 import java.io.Serializable;
 import java.util.Date;
@@ -50,4 +51,6 @@ public interface Dao {
     public List<UserService> getUserNotServices(Integer usuario_id);
     
     public <T> T getBitacoraBusqueda1(String usuario, String servicio, Date fechai, Date fechaf);
+    
+    public List<RpiResultado> getRpisGuardados(String usuario, Date fechai, Date fechaf);
 }
