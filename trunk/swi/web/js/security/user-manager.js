@@ -24,39 +24,6 @@ domain.errors = {
     }
 };
 
-domain.formButtons = function(options) {
-    return [{
-            text: 'Guardar',
-            iconCls: 'entity-save',
-            formBind: true,
-            handler: function() {
-                options.form.getForm().submit({
-                    //waitMsg : 'Guardando...',
-                    success: function(form, action) {
-                        options.grid.getStore().reload();
-                        options.win.close();
-                    },
-                    failure: function(form, action) {
-                        //Ext.Msg.alert('Warning', action.result.errorMessage);
-                        //options.error('Error interno',action.result.errorMessage);
-                        domain.errors.submitFailure('Error interno', action.result.errorMessage);
-                    }
-                });
-            }
-        }, {
-            text: 'Deshacer',
-            iconCls: 'entity-undo',
-            handler: function() {
-                options.form.getForm().reset();
-            }
-        }, '->', {
-            text: 'Cerrar',
-            handler: function() {
-                options.win.close();
-            }
-        }];
-};
-
 domain.UserManager = {
     changePassword: function(options) {
         var form = new Ext.FormPanel({
@@ -161,7 +128,7 @@ domain.UserManager = {
             root: 'data',
             fields: ['id', 'cargo', 'nombres', 'paterno', 'materno',
                 'activo', 'descripcion', 'usuario', 'email',
-                {name: 'caducaEn', type: 'long'}, 'rol'],
+                {name: 'caducaEn', type: 'long'}, 'rol', 'plus'],
             autoLoad: true
         });
 
@@ -222,6 +189,17 @@ domain.UserManager = {
                     header: "Activo",
                     sortable: true,
                     dataIndex: 'activo',
+                    renderer: function(val) {
+                        if (val) {
+                            return '<img src="' + Ext.IMAGES_SILK + 'accept.png">';
+                        } else {
+                            return '<img src="' + Ext.IMAGES_SILK + 'cancel.png">';
+                        }
+                    }
+                }, {
+                    header: "Ver todo",
+                    sortable: true,
+                    dataIndex: 'plus',
                     renderer: function(val) {
                         if (val) {
                             return '<img src="' + Ext.IMAGES_SILK + 'accept.png">';

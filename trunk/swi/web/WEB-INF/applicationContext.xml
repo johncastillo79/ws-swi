@@ -70,6 +70,7 @@
           <property name="clave" value="f82188f01f3f772056edfd2602c1c3a2" />
           <property name="rol" value="swi" />
           <property name="activo" value="true" />          
+          <property name="plus" value="false" />  
     </bean>        
     <!-- ADD PERSISTENCE SUPPORT HERE (jpa, hibernate, etc) -->
     <import resource="database-config.xml"/>
