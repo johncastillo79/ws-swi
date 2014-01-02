@@ -36,14 +36,19 @@ swi.ui.openModule = function(options) {
             var siframe = new Ext.IframePanel({
                 src: options.url ? options.url : '404.jsp'
             });            
-            tab = new Ext.Panel({
+            var tabCfg = {
                 id:options.id,
                 iconCls: options.iconCls ? options.iconCls : 'module-app',
                 layout:'fit',
                 closable:true,
                 title:options.title ? options.title : 'Sin titulo',
                 items:siframe
-            });                                          
+            };            
+            if(options.tbar) {
+                tabCfg.tbar = options.tbar;
+            }
+            
+            tab = new Ext.Panel(tabCfg);                        
             swi.ui.main.tabs.add(tab);
         }  
         swi.ui.main.tabs.activate(tab);       

@@ -54,7 +54,7 @@ Ext.ns('Ext.samples');
             });
             return grid;
         }
-        return undefined;
+        return null;
     };
 
     Ext.samples.RequestForm = function(options) {
@@ -76,14 +76,10 @@ Ext.ns('Ext.samples');
 
                 var ppanel = new Ext.Panel({
                     xtype: 'panel',
-                    //title: 'Resultado',
                     region: 'center',
                     border: false,
                     layout: 'fit',
-                    //bodyStyle: 'padding:10px',
-                    //autoScroll: true,
                     height: 200
-                            //html: '<pre  class="brush: xml;"></pre>'
                 });
 
                 var form = new Ext.FormPanel({

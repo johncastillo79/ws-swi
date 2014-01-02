@@ -19,39 +19,66 @@
 
         <script type="text/javascript">
             Ext.namespace('domain');
+            domain.errors = {
+                mustSelect: function() {
+                    Ext.MessageBox.show({
+                        title: 'Aviso',
+                        msg: 'Debe seleccionar un <b>Registro</b>.',
+                        buttons: Ext.MessageBox.OK,
+                        icon: Ext.Msg.INFO
+                    });
+                }
+            };
             domain.Manager = {
-                fields: function(data) {
+                fields: function(data, gridcfg, sm) {
                     if (data.length > 0) {
                         var cols = new Array();
+                        if (sm) {
+                            cols.push(sm);
+                        } else if (data.length > 5) {
+                            cols.push(new Ext.grid.RowNumberer({
+                                width: 29
+                            }));
+                        }
                         var fields = new Array();
                         for (var prop in data[0]) {
-                            console.log("key:" + prop);
-                            var col = {
-                                header: prop,
-                                dataIndex: prop,
-                                sortable: true
-                            };
-                            cols.push(col);
+                            if (prop !== '_root_') {
+                                if (gridcfg) {
+                                    if (gridcfg[prop] !== '') {
+                                        cols.push({
+                                            header: gridcfg[prop],
+                                            dataIndex: prop,
+                                            sortable: true
+                                        });
+                                    }
+                                } else {
+                                    cols.push({
+                                        header: prop,
+                                        dataIndex: prop,
+                                        sortable: true
+                                    });
+                                }
+                            }
                             var field = {
                                 name: prop
                             };
                             fields.push(field)
                         }
-
-                        var grid = new Ext.grid.GridPanel({
-                            //title: 'Resultados',                            
-                            //height: 190,
-                            //region:'south',
+                        var gridcfg = {
                             store: new Ext.data.JsonStore({
                                 fields: fields,
                                 data: data,
                                 autoLoad: true
                             }),
                             columns: cols
-                        });
+                        };
+                        if (sm) {
+                            gridcfg.sm = sm;
+                        }
+                        var grid = new Ext.grid.GridPanel(gridcfg);
                         return grid;
                     }
-                    return undefined;
+                    return null;
                 },
                 individual: function(options) {
                     var serviceResponse;
@@ -87,30 +114,57 @@
                                         iconCls: 'play',
                                         tooltip: 'Llamar la operaci&oacute;n del servicio',
                                         handler: function() {
+                                            ppanel.getEl().mask("Procesando...", "x-mask-loading");
                                             form.getForm().submit({
-                                                waitMsg: {tile: 'Enviando...'},
                                                 success: function(form, action) {
+                                                    ppanel.getEl().unmask();
                                                     serviceResponse = Ext.util.JSON.decode(action.response.responseText);
+                                                    if (serviceResponse.gridcfg) {
+                                                        serviceResponse.gridcfg = Ext.util.JSON.decode(serviceResponse.gridcfg);
+                                                    }
                                                     win.getEl().unmask();
-                                                    //win.remove(1);
-                                                    grid = domain.Manager.fields(serviceResponse.result);
+                                                    var sm = new Ext.grid.CheckboxSelectionModel();
+                                                    grid = domain.Manager.fields(serviceResponse.result, serviceResponse.gridcfg, sm);
                                                     ppanel.add(grid);
-//                                                    win.add({
-//                                                        xtype: 'panel',
-//                                                        title: 'Resultado',
-//                                                        bodyStyle: 'padding:10px',
-//                                                        autoScroll: true,
-//                                                        height: 200,
-//                                                        html: '<pre>' + serviceResponse.result + '</pre>'
-//                                                    });                                                    
                                                     ppanel.doLayout();
                                                 },
                                                 failure: function(form, action) {
-                                                    //Ext.Msg.alert('Warning', action.result.errorMessage);
-                                                    //options.error('Error interno',action.result.errorMessage);
-                                                    //domain.errors.submitFailure('Error interno', action.result.errorMessage);
+                                                    ppanel.getEl().unmask();
+                                                    Ext.MessageBox.show({
+                                                        title: 'Error',
+                                                        msg: 'Error del servidor',
+                                                        buttons: Ext.MessageBox.OK,
+                                                        icon: Ext.Msg.ERROR
+                                                    });
                                                 }
                                             });
+                                        }
+                                    }, '-', {
+                                        text: 'Usar resultado',
+                                        iconCls: 'accept',
+                                        handler: function() {
+                                            var resPanel = Ext.getCmp('responsepanel-' + serviceResponse.id);
+                                            //resPanel.body.update('<pre>' + serviceResponse.result + '</pre>');
+                                            resPanel.removeAll();
+                                            if (grid.getSelectionModel().getSelections().length > 0) {
+                                                var ndata = new Array();
+                                                Ext.each(grid.getSelectionModel().getSelections(), function(rec) {
+                                                    ndata.push(rec.data);
+                                                });
+                                                var ngrid = domain.Manager.fields(ndata, serviceResponse.gridcfg);
+                                                resPanel.add(ngrid);
+                                                resPanel.doLayout();
+                                                options.salida.result = ndata;
+                                                options.salida.redefinido = true;
+                                                win.close();
+                                            } else {
+                                                Ext.MessageBox.show({
+                                                    title: 'Error',
+                                                    msg: 'Seleccione registros',
+                                                    buttons: Ext.MessageBox.OK,
+                                                    icon: Ext.Msg.ERROR
+                                                });
+                                            }
                                         }
                                     }]
                             });
@@ -126,24 +180,13 @@
                                 autoScroll: true,
                                 layout: 'border',
                                 width: 600,
-                                height: 300,
+                                height: 380,
                                 minHeight: 250,
                                 minWidth: 550,
-                                items: [form,ppanel],
+                                items: [form, ppanel],
                                 maximizable: true,
                                 modal: true,
                                 buttons: [{
-                                        text: 'Usar resultado',
-                                        handler: function() {
-                                            var resPanel = Ext.getCmp('responsepanel-' + serviceResponse.id);
-                                            //resPanel.body.update('<pre>' + serviceResponse.result + '</pre>');
-                                            resPanel.removeAll();
-                                            resPanel.add(grid);
-                                            resPanel.doLayout();
-                                            options.salida = serviceResponse.result;
-                                            win.close();
-                                        }
-                                    }, {
                                         text: 'Cerrar',
                                         handler: function() {
                                             win.close();
@@ -158,8 +201,8 @@
                     });
                 },
                 guardar: function(options) {
-                    console.log(options.entrada);
-                    console.log(options.salida);
+                    //console.log(options.entrada);
+                    //console.log(options.salida);
                     var form = new Ext.FormPanel({
                         url: Ext.SROOT + 'rpiview/guardarrpi',
                         border: false,
@@ -174,12 +217,7 @@
                                 fieldLabel: 'Nombre',
                                 allowBlank: false,
                                 name: 'nombre'
-                            }, /*{
-                             xtype: 'textarea',
-                             fieldLabel: 'Descripci&oacute;n',
-                             allowBlank: false,
-                             name: 'descripcion'
-                             },*/ {
+                            }, {
                                 xtype: "hidden",
                                 name: "entrada",
                                 value: Ext.util.JSON.encode(options.entrada),
@@ -242,7 +280,7 @@
                     });
 
                     var grid = new Ext.grid.GridPanel({
-                        title: 'Usuarios',
+                        //title: 'Usuarios',
                         border: false,
                         store: store,
                         loadMask: true,
@@ -257,6 +295,10 @@
                                 header: "Usuario",
                                 sortable: true,
                                 dataIndex: 'usuario'
+                            }, {
+                                header: "Fecha",
+                                sortable: true,
+                                dataIndex: 'fecha'
                             }
                         ]});
                     var win = new Ext.Window({
@@ -298,6 +340,150 @@
                             }]
                     });
                     win.show();
+                },
+                openFile: function(options) {
+                    var storeUsuario = new Ext.data.JsonStore({
+                        url: 'rpiview/listarusuarios',
+                        root: 'data',
+                        fields: [{name: 'id'},
+                            {name: 'usuario'}
+                        ],
+                        autoLoad: true
+                    });
+
+                    var cboBusUsuario = new Ext.form.ComboBox({
+                        fieldLabel: 'Usuario',
+                        name: 'usuario',
+                        forceSelection: true,
+                        store: storeUsuario,
+                        allowBlank: false,
+                        triggerAction: 'all',
+                        lastQuery: '', //hideTrigger:true,
+                        editable: false,
+                        displayField: 'usuario',
+                        valueField: 'id',
+                        //value: '[TODOS]',
+                        typeAhead: true,
+                        selectOnFocus: true
+                    });
+
+                    var dateField1 = new Ext.form.DateField({
+                        emptyText: 'de...',
+                        id: '_start_date_',
+                        name: 'fecha1',
+                        format: 'd/m/Y',
+                        width: 165,
+                        value: new Date(),
+                        allowBlank: false,
+                        endDateField: '_end_date_'
+                    });
+
+                    var dateField2 = new Ext.form.DateField({
+                        emptyText: 'a...',
+                        id: '_end_date_',
+                        name: 'fecha2',
+                        format: 'd/m/Y',
+                        width: 165,
+                        value: new Date(),
+                        allowBlank: false,
+                        startDateField: '_start_date_'
+                    });
+
+                    var form = new Ext.FormPanel({
+                        border: false,
+                        url: Ext.SROOT + 'rpiview/listarpis',
+                        region: 'north',
+                        autoHeight: true,
+                        bodyStyle: 'padding:10px',
+                        frame: true,
+                        collapsible: true,
+                        buttonAlign: 'center',
+                        items: [cboBusUsuario,
+                            {xtype: 'compositefield',
+                                fieldLabel: 'Periodo',
+                                items: [dateField1, dateField2]
+                            }],
+                        buttons: [{
+                                text: 'Buscar',
+                                handler: function() {
+                                    if (form.getForm().isValid()) {
+                                        store.load({params: form.getForm().getValues()})
+                                    }
+                                }
+                            }]
+                    });
+
+                    var store = new Ext.data.JsonStore({
+                        url: Ext.SROOT + 'rpiview/listarpis',
+                        fields: ['id', 'nombre', 'usuario', 'fecha', 'entrada', 'salida']
+                    });
+
+                    var grid = new Ext.grid.GridPanel({
+                        //title: 'Usuarios',
+                        border: false,
+                        region: 'center',
+                        store: store,
+                        loadMask: true,
+                        columns: [new Ext.grid.RowNumberer({
+                                width: 27
+                            }), {
+                                header: "Archivo",
+                                sortable: true,
+                                width: 100,
+                                dataIndex: 'nombre'
+                            }, {
+                                header: "Usuario",
+                                sortable: true,
+                                dataIndex: 'usuario'
+                            }, {
+                                header: "Fecha",
+                                sortable: true,
+                                dataIndex: 'fecha'
+                            }
+                        ]});
+                    var win = new Ext.Window({
+                        title: 'Archivos',
+                        autoScroll: true,
+                        width: 600,
+                        height: 400,
+                        layout: 'border',
+                        items: [form, grid],
+                        modal: true,
+                        buttons: [{
+                                text: 'Abrir',
+                                iconCls: 'open',
+                                handler: function() {
+                                    var record = grid.getSelectionModel().getSelected();
+                                    if (record) {                                        
+                                        var fdata = Ext.util.JSON.decode(record.data.entrada);
+                                        options.output.entrada = fdata
+                                        options.form.getForm().loadRecord({data: fdata});
+
+                                        var rdata = Ext.util.JSON.decode(record.data.salida);
+                                        options.output.salida = rdata;
+                                        for (var prop in rdata) {                                            
+                                            var robj = rdata[prop];
+                                            var resPanel = Ext.getCmp('responsepanel-' + robj.id);
+                                            if (resPanel) {
+                                                var gridx = domain.Manager.fields(robj.result, robj.gridcfg);
+                                                resPanel.removeAll();
+                                                resPanel.add(gridx);
+                                                resPanel.doLayout();
+                                            }
+                                        }
+                                        win.close();
+                                    } else {
+                                        domain.errors.mustSelect();
+                                    }
+                                }
+                            }, {
+                                text: 'Cerrar',
+                                handler: function() {
+                                    win.close();
+                                }
+                            }]
+                    });
+                    win.show();
                 }
             };
 
@@ -305,7 +491,7 @@
                 init: function() {
 
                     var _rpidata = new Object();
-                    _rpidata.salida = new Array();
+                    _rpidata.salida = new Object(); // = new Array();
                     var isEjecutado = false;
 
                     var formParametro = new Ext.FormPanel({
@@ -325,7 +511,7 @@
                                 iconCls: 'play',
                                 handler: function() {
                                     _rpidata.entrada = formParametro.getForm().getValues();
-                                    _rpidata.salida = new Array();
+                                    //_rpidata.salida = new Array();
                                     isEjecutado = true;
                                     Ext.each(servicesdata, function(s) {
                                         var params = new Object();
@@ -337,8 +523,7 @@
                                             }
                                         });
                                         params['_swi_userservice_id_'] = s.id;
-                                        Ext.getCmp('responsepanel-' + s.id).getEl().mask("Espere...", "x-mask-loading");
-                                        ;
+                                        Ext.getCmp('responsepanel-' + s.id).getEl().mask("Procesando...", "x-mask-loading");
                                         Ext.Ajax.request({
                                             url: Ext.SROOT + 'webservicesystem',
                                             method: 'POST',
@@ -346,18 +531,21 @@
                                             //waitMsg: 'Espere...',
                                             success: function(result, request) {
                                                 var robj = Ext.util.JSON.decode(result.responseText);
-                                                _rpidata.salida.push(robj);
+                                                if (robj.gridcfg) {
+                                                    robj.gridcfg = Ext.util.JSON.decode(robj.gridcfg);
+                                                }
+                                                _rpidata.salida['srv-' + s.id] = robj;
                                                 var resPanel = Ext.getCmp('responsepanel-' + robj.id);
                                                 resPanel.getEl().unmask();
                                                 //resPanel.body.update('<pre>' + robj.result + '</pre>');
-                                                var grid = domain.Manager.fields(robj.result);
+                                                var grid = domain.Manager.fields(robj.result, robj.gridcfg);
                                                 resPanel.removeAll();
                                                 resPanel.add(grid);
                                                 resPanel.doLayout();
                                             },
                                             failure: function(result, request) {
-                                                var robj = Ext.util.JSON.decode(result.responseText);
-                                                _rpidata.salida.push(robj);
+                                                //var robj = Ext.util.JSON.decode(result.responseText);
+                                                //_rpidata.salida[s.id] = robj;
                                                 var resPanel = Ext.getCmp('responsepanel-' + robj.id);
                                                 resPanel.getEl().unmask();
                                                 //
@@ -367,17 +555,32 @@
                                     });
                                 }
                             }, '-', {
-                                text: 'Guardar',
-                                iconCls: 'entity-save',
-                                handler: function() {
-                                    if (isEjecutado) {
-                                        domain.Manager.guardar({
-                                            entrada: _rpidata.entrada,
-                                            salida: _rpidata.salida
-                                        });
-                                    } else {
-                                        domain.Manager.mustExecute();
-                                    }
+                                text: 'Archivo',
+                                menu: {
+                                    items: [{
+                                            text: 'Abrir...',
+                                            iconCls: 'open',
+                                            handler: function() {
+                                                domain.Manager.openFile({
+                                                    form: formParametro,
+                                                    resultados: derecha,
+                                                    output: _rpidata
+                                                });
+                                            }
+                                        }, {
+                                            text: 'Guardar como...',
+                                            iconCls: 'entity-save',
+                                            handler: function() {
+                                                if (isEjecutado) {
+                                                    domain.Manager.guardar({
+                                                        entrada: _rpidata.entrada,
+                                                        salida: _rpidata.salida
+                                                    });
+                                                } else {
+                                                    domain.Manager.mustExecute();
+                                                }
+                                            }
+                                        }]
                                 }
                             }, {
                                 text: 'Imprimir',
@@ -404,7 +607,6 @@
                     var derecha = new Ext.Panel({
                         title: 'Resultados',
                         region: 'east',
-                        //collapsible: true,
                         split: true,
                         autoScroll: true,
                         width: 550,
@@ -445,11 +647,14 @@
                                     tbar: ['->', {
                                             text: 'Definir',
                                             tooltip: 'Definir la respuesta del servicio',
-                                            iconCls: 'open',
+                                            iconCls: 'accept',
                                             handler: function() {
+                                                if(!_rpidata.salida['srv-' + s.id]) {
+                                                    _rpidata.salida['srv-' + s.id] = new Object();
+                                                }
                                                 domain.Manager.individual({
                                                     id: s.id,
-                                                    salida: _rpidata
+                                                    salida: _rpidata.salida['srv-' + s.id]
                                                 });
                                             }
                                         }]
