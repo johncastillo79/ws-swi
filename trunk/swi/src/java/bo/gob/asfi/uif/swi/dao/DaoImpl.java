@@ -5,6 +5,7 @@
 package bo.gob.asfi.uif.swi.dao;
 
 import bo.gob.asfi.uif.swi.model.Bitacora;
+import bo.gob.asfi.uif.swi.model.RpiResultado;
 import bo.gob.asfi.uif.swi.model.UserService;
 import bo.gob.asfi.uif.swi.model.Usuario;
 import java.io.Serializable;
@@ -60,12 +61,12 @@ public class DaoImpl implements Dao {
     public <T> List<T> findAll(Class<T> entityClass) {
         return this.sessionFactory.getCurrentSession().createQuery("from " + entityClass.getName()).list();
     }
-    
+
     @Transactional(readOnly = true)
     public List<UserService> findAllServices() {
         return this.sessionFactory.getCurrentSession().createQuery("from UserService order by nombre").list();
-                //createCriteria(UserService.class).addOrder(Order.asc("nombre")).list();
-    }   
+        //createCriteria(UserService.class).addOrder(Order.asc("nombre")).list();
+    }
 
     @Transactional(readOnly = true)
     public <T> T load(Class<T> entityClass, Serializable id) {
@@ -165,5 +166,13 @@ public class DaoImpl implements Dao {
         // }
         List result = criterio1.list();
         return (T) result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<RpiResultado> getRpisGuardados(String usuario, Date fechai, Date fechaf) {
+        Criteria criterio1 = this.sessionFactory.getCurrentSession().createCriteria(RpiResultado.class);
+        criterio1.add(Restrictions.eq("usuario", usuario));
+        criterio1.add(Restrictions.between("fecha", fechai, fechaf));
+        return criterio1.list();
     }
 }
