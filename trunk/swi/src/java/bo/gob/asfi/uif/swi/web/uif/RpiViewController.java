@@ -165,15 +165,34 @@ public class RpiViewController {
         return lst;
     }
 
-    @RequestMapping(value = "/guardarrpi", method = RequestMethod.POST)
+    @RequestMapping(value = "/guardarcomorpi", method = RequestMethod.POST)
     public @ResponseBody
-    Map<String, ? extends Object> guardarRpi(RpiResultado rpi) {
+    Map<String, ? extends Object> guardarComoRpi(RpiResultado rpi) {
         Map<String, Object> body = new HashMap<String, Object>();
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             rpi.setUsuario(auth.getName());
             rpi.setFecha(new Date());
             dao.persist(rpi);
+            body.put("success", true);
+        } catch (Exception e) {
+            body.put("success", false);
+        }
+        return body;
+    }
+    
+    @RequestMapping(value = "/guardarrpi", method = RequestMethod.POST)
+    public @ResponseBody
+    Map<String, ? extends Object> guardarRpi(RpiResultado rpi) {
+        Map<String, Object> body = new HashMap<String, Object>();
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            RpiResultado erpi = dao.get(RpiResultado.class, rpi.getId());
+            erpi.setUsuario(auth.getName());
+            erpi.setFechaupdate(new Date());
+            erpi.setEntrada(rpi.getEntrada());
+            erpi.setSalida(rpi.getSalida());
+            dao.update(rpi);
             body.put("success", true);
         } catch (Exception e) {
             body.put("success", false);

@@ -1,7 +1,57 @@
-<?xml version='1.0' encoding='UTF-8'?><S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+<?xml version="1.0" encoding="windows-1252"?>
+<S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
     <S:Body>
-        <ns2:helloResponse xmlns:ns2="http://newpackage/">
-            <return>Hello dsfsff !</return>
-        </ns2:helloResponse>
+        <ns2:sacalistaResponse xmlns:ns2="http://proyecto.ws.uif/">
+            <return>
+                <edad>31</edad>
+                <id_persona>1</id_persona>
+                <nombres>Oscar1</nombres>
+                <sexo>M</sexo>
+                <telefonos>
+                    <telefono>
+                        <ciudades>
+                            <ciudad>
+                                <idCiudad>1</idCiudad>
+                                <nomCiudad>Ciudad 1</nomCiudad>
+                            </ciudad>
+                            <ciudad>
+                                <idCiudad>2</idCiudad>
+                                <nomCiudad>Ciudad 2</nomCiudad>
+                            </ciudad>
+                        </ciudades>                        
+                        <id_telefono>1</id_telefono>
+                        <tefono>712-230101</tefono>
+                    </telefono>
+                    <telefono>
+                        <ciudades>
+                            <ciudad>
+                                <idCiudad>3</idCiudad>
+                                <nomCiudad>Ciudad 3</nomCiudad>
+                            </ciudad>
+                            <ciudad>
+                                <idCiudad>4</idCiudad>
+                                <nomCiudad>Ciudad 4</nomCiudad>
+                            </ciudad>
+                        </ciudades>                        
+                        <id_telefono>2</id_telefono>
+                        <tefono>712-230102</tefono>
+                    </telefono>
+                    <telefono>
+                        <ciudades>
+                            <ciudad>
+                                <idCiudad>5</idCiudad>
+                                <nomCiudad>Ciudad 5</nomCiudad>
+                            </ciudad>
+                            <ciudad>
+                                <idCiudad>6</idCiudad>
+                                <nomCiudad>Ciudad 6</nomCiudad>
+                            </ciudad>
+                        </ciudades>                        
+                        <id_telefono>3</id_telefono>
+                        <tefono>712-230102</tefono>
+                    </telefono>
+                </telefonos>		
+            </return>	  
+        </ns2:sacalistaResponse>
     </S:Body>
 </S:Envelope>

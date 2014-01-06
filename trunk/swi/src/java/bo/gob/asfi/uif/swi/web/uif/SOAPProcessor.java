@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -33,9 +34,9 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class SOAPProcessor {
-    
+
     public static void main(String argv[]) throws FileNotFoundException, SAXException, IOException, XPathExpressionException {
-        
+
         try {
 
             //String expression = "Envelope/Body/ListOfContinentsByNameResponse/ListOfContinentsByNameResult/tContinent";
@@ -45,26 +46,30 @@ public class SOAPProcessor {
             //String expression = "/ListAllArtistsResult/Artist";
             //String expression = "/Envelope/Body/ListOfContinentsByNameResponse/ListOfContinentsByNameResult/tContinent";
             //String expression = "/Envelope/Body/ListAllArtistsResponse/ListAllArtistsResult/Artist";
-            String expression = "/Envelope/Body/GetWeatherResponse/GetWeatherResult";
+            String expression = "/Envelope/Body/sacalistaResponse/return";
             //String expression = "/Envelope/Body/ListOfCountryNamesByNameResponse/ListOfCountryNamesByNameResult/tCountryCodeAndName";
 
             SOAPProcessor xp = new SOAPProcessor();
             //List<Map<String, String>> lst = xp.parseXML(new FileInputStream("/root/Escritorio/swi/web/newXMLDocument.xml"), expression);
             //List<Map<String, String>> lst = xp.parseXML2(new FileInputStream("D:/tempo/Albunes.xml"), expression);
-            List<Map<String, String>> lst = xp.parseXML2(new FileInputStream("D:/tempo/input5.xml"), expression);
-            //Gson g = new Gson();
-            //System.out.println(g.toJson(lst));
+            //2013
+            //List<Map<String, String>> lst = xp.parseXML2(new FileInputStream("D:/tempo/cachexml2.xml"), expression);
+            //2014
+            List<Map<String, String>> lst = xp.parseXML2014(new FileInputStream("D:/tempo/cachexml2.xml"), expression);
+
+            Gson g = new Gson();
+            System.out.println(g.toJson(lst));
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
     }
     //Document xmlDocument = builder.parse(new ByteArrayInputStream(xml.getBytes()));
 
     public List<Map<String, String>> parseXML(Document document, String expression) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
         List<Map<String, String>> lst = new ArrayList<Map<String, String>>();
-        
+
 //        //DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
 //        //DocumentBuilder builder = builderFactory.newDocumentBuilder();
         XPath xPath = XPathFactory.newInstance().newXPath();
@@ -90,15 +95,15 @@ public class SOAPProcessor {
         boolean sw = true;
         for (int i = levels; i >= 1; i--) {
             System.out.println("=================== reading level " + i);
-            for (String lbl : labels) {                
+            for (String lbl : labels) {
                 if (lbl.split(":#")[0].equals(Integer.toString(i))) {
                     String lr = lbl.split(":#")[1];
                     System.out.println(lr);
-                    
+
                     if (i == levels) {
                         int indexdata = 0;
                         int rootindex = 0;
-                        for (String d : data) {                            
+                        for (String d : data) {
                             if (d.equals("[item]")) {
                                 rootindex++;
                             }
@@ -126,7 +131,7 @@ public class SOAPProcessor {
                     } else {
                         //int indexdata = 0;
                         int rootindex = 0;
-                        for (String d : data) {                            
+                        for (String d : data) {
                             if (d.equals("[item]")) {
                                 rootindex++;
                             }
@@ -151,7 +156,7 @@ public class SOAPProcessor {
             }
         }
         System.out.println(new Gson().toJson(lstdata));
-        return lstdata;  
+        return lstdata;
 //        System.out.println("Node Selected Length: " + nodeList.getLength());
 //        for (int i = 0; i < nodeList.getLength(); i++) {
 //            Node n = nodeList.item(i);
@@ -166,7 +171,7 @@ public class SOAPProcessor {
 //        }
 //        return lst;
     }
-    
+
     public List<Map<String, String>> parseXML(FileInputStream file, String expression) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
         DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
@@ -175,7 +180,7 @@ public class SOAPProcessor {
         //InputSource is = new InputSource(reader);
         return parseXML(builder.parse(file), expression);
     }
-    
+
     public List<Map<String, String>> parseXML(String xml, String expression) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
         DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
@@ -193,10 +198,10 @@ public class SOAPProcessor {
      * @throws XPathExpressionException
      */
     public List<Map<String, String>> parseXML2(FileInputStream file, String expression) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
-        
+
         DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
-        
+
         List<Map<String, String>> lst = new ArrayList<Map<String, String>>();
         //DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
         //DocumentBuilder builder = builderFactory.newDocumentBuilder();
@@ -223,20 +228,20 @@ public class SOAPProcessor {
         boolean sw = true;
         for (int i = levels; i >= 1; i--) {
             System.out.println("=================== reading level " + i);
-            for (String lbl : labels) {                
+            for (String lbl : labels) {
                 if (lbl.split(":#")[0].equals(Integer.toString(i))) {
                     String lr = lbl.split(":#")[1];
                     System.out.println(lr);
-                    
+
                     if (i == levels) {
                         int indexdata = 0;
                         int rootindex = 0;
-                        for (String d : data) {                            
+                        for (String d : data) {
                             if (d.equals("[item]")) {
                                 rootindex++;
                             }
-                            
-                            if (d.split(":#")[0].equals(Integer.toString(levels))) {                                
+
+                            if (d.split(":#")[0].equals(Integer.toString(levels))) {
                                 String dt = d.split(":#")[1];
                                 System.out.println("dt:  " + dt);
                                 System.out.println("lr:  " + lr);
@@ -263,7 +268,7 @@ public class SOAPProcessor {
                     } else {
                         //int indexdata = 0;
                         int rootindex = 0;
-                        for (String d : data) {                            
+                        for (String d : data) {
                             if (d.equals("[item]")) {
                                 rootindex++;
                             }
@@ -319,7 +324,7 @@ public class SOAPProcessor {
 //        }
 //        return lst;
     }
-    
+
     public void rec2(NodeList nodeList, String root, Set<String> labels, List<String> data, int level, int x) {
         //Set<String> labels = new HashSet<String>();
         for (int i = 0; i < nodeList.getLength(); i++) {
@@ -330,9 +335,9 @@ public class SOAPProcessor {
                     data.add("[item]");
                     level = 0;
                 }
-                
+
                 if (n.getChildNodes().getLength() > 1) {
-                    
+
                     level++;
                     rec2(n.getChildNodes(), root + "/" + n.getNodeName(), labels, data, level--, i);
                 } else {
@@ -347,7 +352,7 @@ public class SOAPProcessor {
         }
         //return labels;
     }
-    
+
     public void rec(NodeList nodeList, String root, Set<String> labels, List<String> data, int level) {
         //Set<String> labels = new HashSet<String>();
         for (int i = 0; i < nodeList.getLength(); i++) {
@@ -357,7 +362,7 @@ public class SOAPProcessor {
                     System.out.println("--- " + i);
                     data.add("[item]");
                     level = 0;
-                }
+                } 
                 //System.out.println(n.getNodeType());
                 //System.out.println(n.getChildNodes().getLength());
                 //System.out.println(n.getNodeName() + ":" + n.getTextContent());
@@ -378,5 +383,143 @@ public class SOAPProcessor {
             }
         }
         //return labels;
+    }
+
+    private int getNro(NodeList nodeList, String attr) {
+        int count = 0;
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node n = nodeList.item(i);
+            if (n.getNodeType() == Node.ELEMENT_NODE) {
+                System.out.println(":: " + n.getNodeName() + " : " + attr);
+                if (n.getNodeName().equals(attr)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * 2014 Parser XML
+     *
+     * @param nodeList
+     * @param map
+     * @param recs
+     * @param labels
+     */
+    public void rec2014(NodeList nodeList, Map<String, Object> map, List<Map<String, Object>> recs, Set<String> labels) {
+        boolean entity = false;
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node n = nodeList.item(i);
+            if (n.getNodeType() == Node.ELEMENT_NODE) {
+                if (n.getChildNodes().getLength() == 1) {
+                    entity = true;
+                    labels.add(n.getNodeName());
+                    System.out.println("  -  " + n.getNodeName());
+                    System.out.println("  -  " + getNro(n.getParentNode().getChildNodes(), n.getNodeName()));
+
+                    map.put(n.getNodeName(), n.getTextContent());
+                }
+            }
+        }
+
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node n = nodeList.item(i);
+            if (n.getNodeType() == Node.ELEMENT_NODE) {
+                if (n.getChildNodes().getLength() > 1) {
+                    if (!entity) {
+                        rec2014(n.getChildNodes(), new HashMap<String, Object>(), recs, labels);
+                    } else {
+                        System.out.println("  -  " + n.getNodeName());
+                        int repeatAttr = getNro(n.getParentNode().getChildNodes(), n.getNodeName());
+                        System.out.println("  -  " + repeatAttr);
+                        if(repeatAttr == 1) { 
+                           map.put(n.getNodeName(), new ArrayList<Map<String, Object>>());
+                           rec2014(n.getChildNodes(), map, (List) map.get(n.getNodeName()), labels);
+                        } 
+                        if(repeatAttr > 1) { 
+                           //isDuplis = true;
+                           if(map.get(n.getNodeName()) == null) {
+                               map.put(n.getNodeName(), new ArrayList<Map<String, Object>>());                               
+                           }
+                           rec2014(n.getChildNodes(), new HashMap<String, Object>(), (List) map.get(n.getNodeName()), labels);
+                        } 
+                    }
+                }
+            }
+        }
+        if (entity) {
+            recs.add(map);
+        }
+    }
+
+    public void rec20142(NodeList nodeList, Map<String, Object> map, List<Map<String, Object>> recs, Set<String> labels) {
+        boolean entity = false;
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node n = nodeList.item(i);
+            if (n.getNodeType() == Node.ELEMENT_NODE) {
+                if (n.getChildNodes().getLength() == 1) {
+                    entity = true;
+                    labels.add(n.getNodeName());
+                    map.put(n.getNodeName(), n.getTextContent());
+                }
+            }
+        }
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node n = nodeList.item(i);
+            if (n.getNodeType() == Node.ELEMENT_NODE) {
+                if (n.getChildNodes().getLength() > 1) {
+                    if (!entity) {
+                        rec2014(n.getChildNodes(), new HashMap<String, Object>(), recs, labels);
+                    } else {
+                        map.put(n.getNodeName(), new ArrayList<Map<String, Object>>());
+                        rec2014(n.getChildNodes(), map, (List) map.get(n.getNodeName()), labels);
+                    }
+                }
+            }
+        }
+        if (entity) {
+            recs.add(map);
+        }
+    }
+
+    public List<Map<String, String>> parseXML2014(FileInputStream file, String expression) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
+
+        DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = builderFactory.newDocumentBuilder();
+
+        List<Map<String, Object>> lst = new ArrayList<Map<String, Object>>();
+        //DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+        //DocumentBuilder builder = builderFactory.newDocumentBuilder();
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        System.out.println("XPath expression: " + expression);
+        //read a nodelist using xpath
+        NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(builder.parse(file), XPathConstants.NODESET);
+        System.out.println("Node Selected Length: " + nodeList.getLength());
+        Map<String, Object> mlst = new HashMap<String, Object>();
+        Set<String> labels = new HashSet<String>();
+        rec2014(nodeList, mlst, lst, labels);
+        System.out.println(new Gson().toJson(lst));
+        for (String s : labels) {
+            System.out.println("lbl: " + s);
+        }
+        //proc2014(lst, labels);
+        return null;
+    }
+
+    public void proc2014(List<Map<String, Object>> ls, Set<String> labels) {
+        for (Map<String, Object> o : ls) {
+            System.out.println("record --");
+            for (Entry<String, Object> e : o.entrySet()) {
+                if (e.getValue() instanceof String) {
+                    System.out.println(e.getValue().getClass());
+                }
+            }
+            for (Entry<String, Object> e : o.entrySet()) {
+                if (e.getValue() instanceof ArrayList) {
+                    proc2014((List) e.getValue(), labels);
+                }
+            }
+        }
     }
 }
