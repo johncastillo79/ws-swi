@@ -32,6 +32,9 @@ public class RpiResultado {
     @Temporal(javax.persistence.TemporalType.TIMESTAMP)
     @DateTimeFormat(pattern = "dd/MM/yyyy")
     private Date fecha;
+    @Temporal(javax.persistence.TemporalType.TIMESTAMP)
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date fechaupdate;
     @Lob
     private String entrada;
     @Lob
@@ -83,5 +86,13 @@ public class RpiResultado {
 
     public void setSalida(String salida) {
         this.salida = salida;
+    }
+
+    public Date getFechaupdate() {
+        return fechaupdate;
+    }
+
+    public void setFechaupdate(Date fechaupdate) {
+        this.fechaupdate = fechaupdate;
     }
 }
