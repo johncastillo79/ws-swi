@@ -29,8 +29,98 @@
                     });
                 }
             };
+
             domain.Manager = {
+                processor: function(json) {
+                    var data = Ext.util.JSON.decode(json);
+                    var str = '[{';
+                    function setter(node) {
+                        if (node.parent) {
+                            for (var prop in node.attributes) {
+                                str = str + '"' + node.name + '/' + prop + '":"' + node.attributes[prop] + '",';
+                            }
+                            setter(node.parent);
+                        }
+                    }
+
+                    function decoderTree(node) {
+                        if (node.children) {
+                            Ext.each(node.children, function(chld) {
+                                chld.parent = node;
+                                decoderTree(chld);
+                            });
+                        } else {
+                            setter(node);
+                            str = str.substring(0, str.length - 1) + '},{'
+                        }
+                    }
+
+                    data.parent = null;
+                    if (!data.leaf) {
+                        decoderTree(data);
+                        str = str.substring(0, str.length - 2) + ']';
+                        return Ext.util.JSON.decode(str);
+                    } else {
+                        var arr = new Array();
+                        if (data.attributes) {
+                            arr.push(data.attributes);
+                        }
+                        return arr;
+                    }
+                },
                 fields: function(data, gridcfg, sm) {
+                    data = domain.Manager.processor(data);
+                    if (data.length > 0) {
+                        var cols = new Array();
+                        if (sm) {
+                            cols.push(sm);
+                        } else if (data.length > 5) {
+                            cols.push(new Ext.grid.RowNumberer({
+                                width: 29
+                            }));
+                        }
+                        var fields = new Array();
+                        for (var prop in data[0]) {
+                            if (prop !== '_root_') {
+                                if (gridcfg) {
+                                    if (gridcfg[prop] !== '') {
+                                        cols.push({
+                                            header: gridcfg[prop],
+                                            dataIndex: prop,
+                                            sortable: true
+                                        });
+                                    }
+                                } else {
+                                    cols.push({
+                                        header: prop,
+                                        dataIndex: prop,
+                                        sortable: true
+                                    });
+                                }
+                            }
+                            var field = {
+                                name: prop
+                            };
+                            fields.push(field)
+                        }
+                        var gridcfg = {
+                            store: new Ext.data.JsonStore({
+                                fields: fields,
+                                data: data,
+                                autoLoad: true
+                            }),
+                            columns: cols
+                        };
+                        if (sm) {
+                            gridcfg.sm = sm;
+                        }
+                        var grid = new Ext.grid.GridPanel(gridcfg);
+                        return grid;
+                    }
+                    return null;
+                },
+                fields2: function(data, gridcfg, sm) {
+                    //var data = domain.Manager.processor(datai);
                     if (data.length > 0) {
                         var cols = new Array();
                         if (sm) {
@@ -114,6 +204,7 @@
                                         iconCls: 'play',
                                         tooltip: 'Llamar la operaci&oacute;n del servicio',
                                         handler: function() {
+                                            ppanel.removeAll();
                                             ppanel.getEl().mask("Procesando...", "x-mask-loading");
                                             form.getForm().submit({
                                                 success: function(form, action) {
@@ -143,20 +234,30 @@
                                         text: 'Usar resultado',
                                         iconCls: 'accept',
                                         handler: function() {
-                                            var resPanel = Ext.getCmp('responsepanel-' + serviceResponse.id);
-                                            //resPanel.body.update('<pre>' + serviceResponse.result + '</pre>');
-                                            resPanel.removeAll();
-                                            if (grid.getSelectionModel().getSelections().length > 0) {
-                                                var ndata = new Array();
-                                                Ext.each(grid.getSelectionModel().getSelections(), function(rec) {
-                                                    ndata.push(rec.data);
-                                                });
-                                                var ngrid = domain.Manager.fields(ndata, serviceResponse.gridcfg);
-                                                resPanel.add(ngrid);
-                                                resPanel.doLayout();
-                                                options.salida.result = ndata;
-                                                options.salida.redefinido = true;
-                                                win.close();
+                                            if (serviceResponse) {
+                                                var resPanel = Ext.getCmp('responsepanel-' + serviceResponse.id);
+                                                //resPanel.body.update('<pre>' + serviceResponse.result + '</pre>');
+                                                resPanel.removeAll();
+                                                if (grid.getSelectionModel().getSelections().length > 0) {
+                                                    console.log(grid.getSelectionModel().getSelections());
+                                                    var ndata = new Array();
+                                                    Ext.each(grid.getSelectionModel().getSelections(), function(rec) {
+                                                        ndata.push(rec.data);
+                                                    });
+                                                    var ngrid = domain.Manager.fields2(ndata, serviceResponse.gridcfg);
+                                                    resPanel.add(ngrid);
+                                                    resPanel.doLayout();
+                                                    options.salida.result = ndata;
+                                                    options.salida.redefinido = true;
+                                                    win.close();
+                                                } else {
+                                                    Ext.MessageBox.show({
+                                                        title: 'Error',
+                                                        msg: 'Seleccione registros',
+                                                        buttons: Ext.MessageBox.OK,
+                                                        icon: Ext.Msg.ERROR
+                                                    });
+                                                }
                                             } else {
                                                 Ext.MessageBox.show({
                                                     title: 'Error',
@@ -200,11 +301,9 @@
                         }
                     });
                 },
-                guardar: function(options) {
-                    //console.log(options.entrada);
-                    //console.log(options.salida);
+                guardarComo: function(options) {
                     var form = new Ext.FormPanel({
-                        url: Ext.SROOT + 'rpiview/guardarrpi',
+                        url: Ext.SROOT + 'rpiview/guardarcomorpi',
                         border: false,
                         autoHeight: true,
                         bodyStyle: 'padding:10px',
@@ -220,17 +319,17 @@
                             }, {
                                 xtype: "hidden",
                                 name: "entrada",
-                                value: Ext.util.JSON.encode(options.entrada),
+                                value: Ext.util.JSON.encode(options.output.entrada),
                             }, {
                                 xtype: "hidden",
                                 name: "salida",
-                                value: Ext.util.JSON.encode(options.salida),
+                                value: Ext.util.JSON.encode(options.output.salida),
                             }]
                     });
 
                     var win = new Ext.Window({
                         iconCls: 'entity-save',
-                        title: 'Guardar RPI',
+                        title: 'Guardar como...',
                         autoScroll: true,
                         autoHeight: true,
                         width: 500,
@@ -257,6 +356,46 @@
                             }]
                     });
                     win.show();
+                },
+                guardar: function(options) {
+                    console.log(options.output);
+                    var form = new Ext.FormPanel({
+                        url: Ext.SROOT + 'rpiview/guardarrpi',
+                        border: false,
+                        autoHeight: true,
+                        bodyStyle: 'padding:10px',
+                        defaults: {
+                            msgTarget: 'side',
+                            width: 300
+                        },
+                        items: [{
+                                xtype: 'hidden',
+                                allowBlank: false,
+                                name: 'id',
+                                value: options.output.id
+                            }, {
+                                xtype: "hidden",
+                                name: "entrada",
+                                value: Ext.util.JSON.encode(options.output.entrada),
+                            }, {
+                                xtype: "hidden",
+                                name: "salida",
+                                value: Ext.util.JSON.encode(options.output.salida),
+                            }]
+                    });
+
+                    form.getForm().submit({
+                        success: function(form, action) {
+                            //win.close();
+                        },
+                        failure: function(form, action) {
+                            if (action.failureType === 'server') {
+                                var r = Ext.util.JSON.decode(action.response.responseText);
+                                com.icg.errors.submitFailure('Error', r.errorMessage);
+                            }
+                        }
+                    });
+
                 },
                 mustExecute: function() {
                     Ext.MessageBox.show({
@@ -442,7 +581,7 @@
                             }
                         ]});
                     var win = new Ext.Window({
-                        title: 'Archivos',
+                        title: 'Abrir archivo...',
                         autoScroll: true,
                         width: 600,
                         height: 400,
@@ -451,26 +590,37 @@
                         modal: true,
                         buttons: [{
                                 text: 'Abrir',
-                                iconCls: 'open',
                                 handler: function() {
                                     var record = grid.getSelectionModel().getSelected();
-                                    if (record) {                                        
+                                    if (record) {
+                                        options.ptitle.setTitle('Formulario de Consulta - (' + record.data.nombre + ')');
                                         var fdata = Ext.util.JSON.decode(record.data.entrada);
-                                        options.output.entrada = fdata
-                                        options.form.getForm().loadRecord({data: fdata});
+                                        options.output.entrada = fdata;
+                                        var input = new Object();
+                                        Ext.each(fdata, function(e) {
+                                            input[e.name] = e.value;
+                                        });
+                                        options.form.getForm().loadRecord({data: input});
 
                                         var rdata = Ext.util.JSON.decode(record.data.salida);
                                         options.output.salida = rdata;
-                                        for (var prop in rdata) {                                            
+                                        for (var prop in rdata) {
                                             var robj = rdata[prop];
                                             var resPanel = Ext.getCmp('responsepanel-' + robj.id);
                                             if (resPanel) {
-                                                var gridx = domain.Manager.fields(robj.result, robj.gridcfg);
+                                                var gridx = domain.Manager.fields2(robj.result, robj.gridcfg);
                                                 resPanel.removeAll();
                                                 resPanel.add(gridx);
                                                 resPanel.doLayout();
                                             }
                                         }
+
+                                        options.output.id = record.data.id;
+                                        options.output.nombre = record.data.nombre;
+                                        Ext.getCmp('__rpisave').setDisabled(false);
+                                        Ext.getCmp('__rpisaveas').setDisabled(false);
+                                        Ext.getCmp('__rpiprint').setDisabled(false);
+
                                         win.close();
                                     } else {
                                         domain.errors.mustSelect();
@@ -484,12 +634,23 @@
                             }]
                     });
                     win.show();
+                },
+                getEntrada: function(form, values) {
+                    var a = new Array();
+                    for (var prop in values) {
+                        a.push({
+                            name: prop,
+                            value: values[prop],
+                            label: form.getForm().findField(prop).fieldLabel
+                        });
+                    }
+                    return a;
                 }
             };
 
             domain.Panel = {
                 init: function() {
-
+                    var fileOpen = null;
                     var _rpidata = new Object();
                     _rpidata.salida = new Object(); // = new Array();
                     var isEjecutado = false;
@@ -510,7 +671,7 @@
                                 text: 'Ejecutar',
                                 iconCls: 'play',
                                 handler: function() {
-                                    _rpidata.entrada = formParametro.getForm().getValues();
+                                    _rpidata.entrada = domain.Manager.getEntrada(formParametro, formParametro.getForm().getValues());
                                     //_rpidata.salida = new Array();
                                     isEjecutado = true;
                                     Ext.each(servicesdata, function(s) {
@@ -531,28 +692,33 @@
                                             //waitMsg: 'Espere...',
                                             success: function(result, request) {
                                                 var robj = Ext.util.JSON.decode(result.responseText);
-                                                if (robj.gridcfg) {
-                                                    robj.gridcfg = Ext.util.JSON.decode(robj.gridcfg);
+                                                if (robj.success) {
+                                                    if (robj.gridcfg) {
+                                                        robj.gridcfg = Ext.util.JSON.decode(robj.gridcfg);
+                                                    }
+                                                    _rpidata.salida['srv-' + s.id] = robj;
+                                                    var resPanel = Ext.getCmp('responsepanel-' + robj.id);
+                                                    resPanel.getEl().unmask();
+                                                    //resPanel.body.update('<pre>' + robj.result + '</pre>');
+                                                    var grid = domain.Manager.fields(robj.result, robj.gridcfg);
+                                                    resPanel.removeAll();
+                                                    resPanel.add(grid);
+                                                    resPanel.doLayout();
+                                                } else {
+                                                    var resPanel = Ext.getCmp('responsepanel-' + robj.id);
+                                                    resPanel.getEl().unmask();
+                                                    resPanel.body.update('<span style="color:red"><b>Error del servidor...!</b></span>');
                                                 }
-                                                _rpidata.salida['srv-' + s.id] = robj;
-                                                var resPanel = Ext.getCmp('responsepanel-' + robj.id);
-                                                resPanel.getEl().unmask();
-                                                //resPanel.body.update('<pre>' + robj.result + '</pre>');
-                                                var grid = domain.Manager.fields(robj.result, robj.gridcfg);
-                                                resPanel.removeAll();
-                                                resPanel.add(grid);
-                                                resPanel.doLayout();
                                             },
                                             failure: function(result, request) {
-                                                //var robj = Ext.util.JSON.decode(result.responseText);
-                                                //_rpidata.salida[s.id] = robj;
-                                                var resPanel = Ext.getCmp('responsepanel-' + robj.id);
-                                                resPanel.getEl().unmask();
-                                                //
-                                                //
+                                                var respanel = Ext.getCmp('responsepanel-' + s.id);
+                                                respanel.getEl().unmask();
+                                                resPanel.body.update('<span style="color:red"><b>Error del servidor...!</b></span>');
+                                                //Error unknow
                                             }
                                         });
                                     });
+                                    Ext.getCmp('__rpisaveas').setDisabled(false);
                                 }
                             }, '-', {
                                 text: 'Archivo',
@@ -564,29 +730,55 @@
                                                 domain.Manager.openFile({
                                                     form: formParametro,
                                                     resultados: derecha,
-                                                    output: _rpidata
+                                                    output: _rpidata,
+                                                    ptitle: centro
+                                                });
+                                            }
+                                        }, {
+                                            text: 'Guardar',
+                                            iconCls: 'entity-save',
+                                            id: '__rpisave',
+                                            disabled: true,
+                                            handler: function() {
+                                                Ext.MessageBox.confirm('Confirmar', '¿Confirma sobreescribir?.', function(r) {
+                                                    if (r === 'yes') {
+                                                        domain.Manager.guardar({
+                                                            output: _rpidata
+                                                        });
+                                                    }
                                                 });
                                             }
                                         }, {
                                             text: 'Guardar como...',
                                             iconCls: 'entity-save',
+                                            disabled: true,
+                                            id: '__rpisaveas',
                                             handler: function() {
-                                                if (isEjecutado) {
-                                                    domain.Manager.guardar({
-                                                        entrada: _rpidata.entrada,
-                                                        salida: _rpidata.salida
+                                                if (_rpidata) {
+                                                    domain.Manager.guardarComo({
+                                                        output: _rpidata
                                                     });
                                                 } else {
                                                     domain.Manager.mustExecute();
                                                 }
                                             }
+                                        }, '-', {
+                                            text: 'Imprimir',
+                                            iconCls: 'printer',
+                                            id: '__rpiprint',
+                                            disabled: true,
+                                            handler: function() {
+                                                alert(_rpidata.id);
+                                                //domain.Manager.imprimir({});
+                                            }
                                         }]
                                 }
                             }, {
-                                text: 'Imprimir',
-                                iconCls: 'printer',
+                                text: 'Limpiar',
+                                tooltip: 'Limpiar todo',
+                                iconCls: 'delete',
                                 handler: function() {
-                                    domain.Manager.imprimir({});
+
                                 }
                             }, '->', {
                                 tooltip: 'Actualizar Formulario',
@@ -649,7 +841,7 @@
                                             tooltip: 'Definir la respuesta del servicio',
                                             iconCls: 'accept',
                                             handler: function() {
-                                                if(!_rpidata.salida['srv-' + s.id]) {
+                                                if (!_rpidata.salida['srv-' + s.id]) {
                                                     _rpidata.salida['srv-' + s.id] = new Object();
                                                 }
                                                 domain.Manager.individual({
