@@ -8,6 +8,7 @@ import bo.gob.asfi.uif.swi.dao.Dao;
 import bo.gob.asfi.uif.swi.model.Bitacora;
 import bo.gob.asfi.uif.swi.model.Servidor;
 import bo.gob.asfi.uif.swi.model.UserService;
+import com.google.gson.Gson;
 import com.icg.entityclassutils.DynamicEntityMap;
 import com.predic8.membrane.client.core.util.FormParamsExtractor;
 import com.predic8.wsdl.Definitions;
@@ -28,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -47,6 +50,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+import javax.xml.xpath.XPathExpressionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.core.Authentication;
@@ -55,6 +59,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
@@ -140,7 +145,7 @@ public class WebServiceRequestController {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             soapResponse.writeTo(out);
             String strMsg = new String(out.toByteArray());
-            System.out.println(strMsg);
+            //System.out.println(strMsg);
 
             String response = strMsg;//printSOAPResponse(soapResponse);
             bit.setResponse(response);
@@ -148,13 +153,13 @@ public class WebServiceRequestController {
             //stringToDom(response);
             //getStringFromDocument(this.stringToDom2(response));
             response = prettyFormat(response, 2);
-            System.out.println(response);
+            //System.out.println(response);
             //response = response.replaceAll("<", "&lt;");
             //response = response.replaceAll(">", "&gt;");
 
-            List<Map<String, String>> lst = new SOAPProcessor().parseXML(response, us.getResponseXpath());
+            ArbolNodo an = new SOAPProcessor2().parseXML2014(response, us.getResponseXpath());
 
-            body.put("result", lst);
+            body.put("result", new Gson().toJson(an));
             body.put("gridcfg", us.getGridCols());
             body.put("success", Boolean.TRUE);
             soapConnection.close();
@@ -293,7 +298,6 @@ public class WebServiceRequestController {
             String response = prettyFormat(strMsg, 2);
             this.xml = response;
 
-
             response = response.replaceAll("<", "&lt;");
             response = response.replaceAll(">", "&gt;");
 
@@ -346,15 +350,12 @@ public class WebServiceRequestController {
             creator2.setFormParams(map);
             creator2.createRequest(routerparts[2], routerparts[3], routerparts[4]);
 
-            //System.out.println(writer2.toString());
-
             String url = params.get("__endpoint_swi_var").toString(); //EndPoint url
             System.out.println("Operation EndPoint: " + url);
             // Create SOAP Connection
             SOAPConnectionFactory soapConnectionFactory = SOAPConnectionFactory.newInstance();
             SOAPConnection soapConnection = soapConnectionFactory.createConnection();
             SOAPMessage soapResponse = soapConnection.call(getSoapMessageFromString(writer2.toString()), url);
-
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             soapResponse.writeTo(out);
@@ -363,21 +364,39 @@ public class WebServiceRequestController {
             String response = prettyFormat(strMsg, 2);
             this.xml = response;
 
-            //response = response.replaceAll("<", "&lt;");
-            //response = response.replaceAll(">", "&gt;");
+            ArbolNodo an = new SOAPProcessor2().parseXML2014(response, params.get("__xpath_swi_var").toString());
 
-            List<Map<String, String>> lst = new SOAPProcessor().parseXML(response, params.get("__xpath_swi_var").toString());
-
-            body.put("result", lst);
-            //model.addAttribute("result", response);
-            //body.put("id", params.get("_swi_userservice_id_"));
+            body.put("result", new Gson().toJson(an));
             body.put("success", Boolean.TRUE);
             soapConnection.close();
+        } catch (XPathExpressionException e) {
+            body.put("success", Boolean.FALSE);
+            body.put("message", "Error en XPATH");
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Exception Class:  " + e.getClass());
             body.put("success", Boolean.FALSE);
         }
         return body;
         //return "xml";
+    }
+
+    @RequestMapping(value = "/parsexml", method = RequestMethod.POST)
+    public @ResponseBody
+    String parseXML(@RequestParam String xml, @RequestParam String xpath) {
+        try {
+            SOAPProcessor2 xmlproc = new SOAPProcessor2();
+            ArbolNodo an = xmlproc.parseXML2014(xml, xpath);
+            return new Gson().toJson(an);
+        } catch (ParserConfigurationException ex) {
+            Logger.getLogger(WebServiceRequestController.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SAXException ex) {
+            Logger.getLogger(WebServiceRequestController.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(WebServiceRequestController.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (XPathExpressionException ex) {
+            Logger.getLogger(WebServiceRequestController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
     }
 }

@@ -192,7 +192,7 @@ public class RpiViewController {
             erpi.setFechaupdate(new Date());
             erpi.setEntrada(rpi.getEntrada());
             erpi.setSalida(rpi.getSalida());
-            dao.update(rpi);
+            dao.update(erpi);
             body.put("success", true);
         } catch (Exception e) {
             body.put("success", false);
