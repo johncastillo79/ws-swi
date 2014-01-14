@@ -9,8 +9,48 @@
 Ext.ns('Ext.samples');
 
 (function() {
+    
+    Ext.samples.processor = function(json) {
+        var data = Ext.util.JSON.decode(json);
+        var str = '[{';
+        function setter(node) {
+            if (node.parent) {
+                for (var prop in node.attributes) {
+                    str = str + '"' + node.name + '/' + prop + '":"' + node.attributes[prop] + '",';
+                }
+                setter(node.parent);
+            }
+        }
 
-    Ext.samples.Fields = function(data, gridcfg) {
+        function decoderTree(node) {
+            if (node.children) {
+                Ext.each(node.children, function(chld) {
+                    chld.parent = node;
+                    decoderTree(chld);
+                });
+            } else {
+                setter(node);
+                str = str.substring(0, str.length - 1) + '},{'
+            }
+        }
+
+        data.parent = null;
+        if (!data.leaf) {
+            decoderTree(data);
+            str = str.substring(0, str.length - 2) + ']';
+            return Ext.util.JSON.decode(str);
+        } else {
+            var arr = new Array();
+            if (data.attributes) {
+                arr.push(data.attributes);
+            }
+            return arr;
+        }
+    };
+    
+    
+    Ext.samples.Fields = function(datai, gridcfg) {
+        var data = Ext.samples.processor(datai);
         if (data.length > 0) {
             var cols = new Array();  
             if(data.length > 5) {

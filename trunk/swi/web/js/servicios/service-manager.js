@@ -45,15 +45,61 @@ domain.errors = {
             buttons: Ext.MessageBox.OK,
             icon: Ext.Msg.ERROR
         });
+    },
+    noData: function() {
+        Ext.MessageBox.show({
+            title: 'Error',
+            msg: 'Error del servidor, no hay datos',
+            buttons: Ext.MessageBox.OK,
+            icon: Ext.Msg.ERROR
+        });
     }
 };
 
 domain.ServiceManager = {
+    processor: function(json) {
+        var data = Ext.util.JSON.decode(json);
+        var str = '[{';
+        function setter(node) {
+            if (node.parent) {
+                for (var prop in node.attributes) {
+                    str = str + '"' + node.name + '/' + prop + '":"' + node.attributes[prop] + '",';
+                }
+                setter(node.parent);
+            }
+        }
+
+        function decoderTree(node) {
+            if (node.children) {
+                Ext.each(node.children, function(chld) {
+                    chld.parent = node;
+                    decoderTree(chld);
+                });
+            } else {
+                setter(node);
+                str = str.substring(0, str.length - 1) + '},{'
+            }
+        }
+
+        data.parent = null;
+        if (!data.leaf) {
+            decoderTree(data);
+            str = str.substring(0, str.length - 2) + ']';
+            return Ext.util.JSON.decode(str);
+        } else {
+            var arr = new Array();
+            if (data.attributes) {
+                arr.push(data.attributes);
+            }
+            return arr;
+        }
+    },
     Fields: function(data, gridcfg) {
-        if (data.length > 0) {
+        var gdata = domain.ServiceManager.processor(data);
+        if (gdata.length > 0) {
             var cols = new Array();
             var fields = new Array();
-            for (var prop in data[0]) {
+            for (var prop in gdata[0]) {
                 if (prop !== '_root_') {
                     if (gridcfg) {
                         if (gridcfg[prop] !== '') {
@@ -83,24 +129,27 @@ domain.ServiceManager = {
                 selModel: new Ext.grid.RowSelectionModel({singleSelect: true}),
                 store: new Ext.data.JsonStore({
                     fields: fields,
-                    data: data,
+                    data: gdata,
                     autoLoad: true
                 }),
                 columns: cols
             });
-            return grid;
+            return {grid: grid, cols: cols};
         }
         return null;
     },
-    gridFields: function(data, id, gridcfg) {
+    gridFields: function(data, id) {
         if (data.length > 0) {
             var source = new Object();
-            for (var prop in data[0]) {
-                if (prop !== '_root_') {
-                    //source[prop] = gridcfg[prop] !== null ? gridcfg[prop] : prop;
-                    source[prop] = gridcfg ? gridcfg[prop] : prop;
-                }
-            }
+//            for (var prop in data[0]) {
+//                if (prop !== '_root_') {
+//                    //source[prop] = gridcfg[prop] !== null ? gridcfg[prop] : prop;
+//                    source[prop] = gridcfg ? gridcfg[prop] : prop;
+//                }
+//            }
+            Ext.each(data, function(col) {
+                source[col.dataIndex] = col.header;
+            });
 
             var propsGrid = new Ext.grid.PropertyGrid({
                 tbar: [{
@@ -115,6 +164,7 @@ domain.ServiceManager = {
                                     config: Ext.util.JSON.encode(propsGrid.source)
                                 },
                                 success: function(result, request) {
+                                    win.close();
                                     Ext.MessageBox.show({
                                         title: 'Aviso',
                                         msg: 'Se ha guardado correctamente. Vuelva a ejecutar.',
@@ -130,7 +180,25 @@ domain.ServiceManager = {
                     }],
                 source: source
             });
-            return propsGrid;
+
+            var win = new Ext.Window({
+                title: 'Configurar columnas',
+                iconCls: 'settings',
+                autoScroll: true,
+                height: 300,
+                width: 500,
+                layout: 'fit',
+                items: [propsGrid],
+                modal: true,
+                buttons: [{
+                        text: 'Cerrar',
+                        handler: function() {
+                            win.close();
+                        }
+                    }]
+            });
+            win.show();
+            //return propsGrid;
         }
         return null;
     },
@@ -271,7 +339,7 @@ domain.ServiceManager = {
                 url: Ext.SROOT + 'servidor/' + item.id,
                 method: 'GET',
                 success: function(result, request) {
-                    var s = Ext.util.JSON.decode(result.responseText);                    
+                    var s = Ext.util.JSON.decode(result.responseText);
                     var tb = [{
                             xtype: 'displayfield',
                             value: 'WSDL'
@@ -285,7 +353,7 @@ domain.ServiceManager = {
                         url: s.servidor.wsdlurl,
                         title: s.servidor.nombre + ' - WSDL',
                         tbar: tb
-                    };                    
+                    };
                     top.swi.ui.openModule(cfg);
                 },
                 failure: function(result, request) {
@@ -410,19 +478,21 @@ domain.ServiceManager = {
                                                 success: function(result, request) {
                                                     options.panelinfo.getEl().unmask();
                                                     var ro = Ext.util.JSON.decode(result.responseText);
-                                                    options.panelinfo.getEl().unmask();
-                                                    if (ro.result.length !== 0) {
-                                                        ppanel.removeAll();
-                                                        var grid = domain.ServiceManager.Fields(ro.result, null);
-                                                        ppanel.add(grid);
-                                                        ppanel.doLayout();
+                                                    if (ro.success) {
+                                                        if (ro.result.length !== 0) {
+                                                            ppanel.removeAll();
+                                                            var rview = domain.ServiceManager.Fields(ro.result, null);
+                                                            if (rview) {
+                                                                ppanel.add(rview.grid);
+                                                                ppanel.doLayout();
+                                                            } else {
+                                                                domain.errors.noData();
+                                                            }
+                                                        } else {
+                                                            domain.errors.noData();
+                                                        }
                                                     } else {
-                                                        Ext.MessageBox.show({
-                                                            title: 'Error',
-                                                            msg: 'Error del servidor, no hay datos',
-                                                            buttons: Ext.MessageBox.OK,
-                                                            icon: Ext.Msg.ERROR
-                                                        });
+                                                        domain.errors.submitFailure('error', ro.message);
                                                     }
                                                 },
                                                 failure: function(result, request) {
@@ -525,8 +595,11 @@ domain.ServiceManager = {
                                     win.close();
                                 },
                                 failure: function(form, action) {
-                                    domain.errors.submitFailure('Error', action.result.message);
-                                    //console.log(action);
+                                    if (action.response.isAbort || action.response.isTimeout) {
+                                        domain.errors.submitFailure('Error local', 'Abortado! fallo en conectividad');
+                                    } else {
+                                        domain.errors.submitFailure('Error servidor', action.result.message);
+                                    }
                                     button.disabled = false;
                                 }
                             });
@@ -688,47 +761,29 @@ domain.ServiceManager = {
                                         var ro = Ext.util.JSON.decode(action.response.responseText);
                                         if (ro.gridcfg) {
                                             ro.gridcfg = Ext.util.JSON.decode(ro.gridcfg);
-                                        } 
+                                        }
                                         if (ro.result.length !== 0) {
                                             ppanel.removeAll();
-                                            var grid = domain.ServiceManager.Fields(ro.result, ro.gridcfg);
-                                            ppanel.add(grid);
-                                            //ppanel.add(gridp);
-                                            var tb = new Ext.Toolbar();
-                                            grid.add(tb);
-                                            tb.add({
-                                                text: 'Configurar columnas',
-                                                iconCls: 'settings',
-                                                handler: function() {
-                                                    var gridp = domain.ServiceManager.gridFields(ro.result, options.id, ro.gridcfg);
-                                                    var win = new Ext.Window({
-                                                        title: 'Configurar columnas',
-                                                        iconCls: 'settings',
-                                                        autoScroll: true,
-                                                        height: 300,
-                                                        width: 500,
-                                                        layout: 'fit',
-                                                        items: [gridp],
-                                                        modal: true,
-                                                        buttons: [{
-                                                                text: 'Cancelar',
-                                                                handler: function() {
-                                                                    win.close();
-                                                                }
-                                                            }]
-                                                    });
-                                                    win.show();
-                                                }
-                                            });
+                                            var rview = domain.ServiceManager.Fields(ro.result, ro.gridcfg);
+                                            if (rview) {
+                                                var grid = rview.grid;
+                                                ppanel.add(grid);
+                                                var tb = new Ext.Toolbar();
+                                                grid.add(tb);
+                                                tb.add({
+                                                    text: 'Configurar columnas',
+                                                    iconCls: 'settings',
+                                                    handler: function() {
+                                                        domain.ServiceManager.gridFields(rview.cols, options.id);
+                                                    }
+                                                });
 
-                                            ppanel.doLayout();
+                                                ppanel.doLayout();
+                                            } else {
+                                                domain.errors.noData();
+                                            }
                                         } else {
-                                            Ext.MessageBox.show({
-                                                title: 'Error',
-                                                msg: 'Error del servidor, no hay datos',
-                                                buttons: Ext.MessageBox.OK,
-                                                icon: Ext.Msg.ERROR
-                                            });
+                                            domain.errors.noData();
                                         }
                                     },
                                     failure: function(form, action) {
@@ -954,7 +1009,7 @@ domain.ServiceManager.View = {
                     iconCls: 'play',
                     handler: function() {
                         var record = sgrid.getSelectionModel().getSelected();
-                        if (record) {                            
+                        if (record) {
                             domain.ServiceManager.requestForm({
                                 panelinfo: serviceInfoPanel,
                                 id: record.data.id
@@ -977,8 +1032,6 @@ domain.ServiceManager.View = {
             maxWidth: 550,
             items: [tree, sgrid]
         });
-
-
 
         new Ext.Viewport({
             layout: 'fit',
