@@ -45,8 +45,8 @@ public class SOAPProcessor {
             //
             //String expression = "/ListAllArtistsResult/Artist";
             //String expression = "/Envelope/Body/ListOfContinentsByNameResponse/ListOfContinentsByNameResult/tContinent";
-            //String expression = "/Envelope/Body/ListAllArtistsResponse/ListAllArtistsResult/Artist";
-            String expression = "/Envelope/Body/sacalistaResponse/return";
+            String expression = "/Envelope/Body/ListAllArtistsResponse/ListAllArtistsResult/Artist";
+            //String expression = "/Envelope/Body/personasResponse/return";
             //String expression = "/Envelope/Body/ListOfCountryNamesByNameResponse/ListOfCountryNamesByNameResult/tCountryCodeAndName";
 
             SOAPProcessor xp = new SOAPProcessor();
@@ -55,7 +55,7 @@ public class SOAPProcessor {
             //2013
             //List<Map<String, String>> lst = xp.parseXML2(new FileInputStream("D:/tempo/cachexml2.xml"), expression);
             //2014
-            List<Map<String, String>> lst = xp.parseXML2014(new FileInputStream("D:/tempo/cachexml2.xml"), expression);
+            List<Map<String, String>> lst = xp.parseXML2014(new FileInputStream("D:/tempo/cachexml9.xml"), expression);
 
             Gson g = new Gson();
             System.out.println(g.toJson(lst));
@@ -184,7 +184,7 @@ public class SOAPProcessor {
     public List<Map<String, String>> parseXML(String xml, String expression) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
         DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
-        return parseXML(builder.parse(new ByteArrayInputStream(xml.getBytes())), expression);
+        return parseXML2014(builder.parse(new ByteArrayInputStream(xml.getBytes())), expression);
     }
 
     /**
@@ -362,7 +362,7 @@ public class SOAPProcessor {
                     System.out.println("--- " + i);
                     data.add("[item]");
                     level = 0;
-                } 
+                }
                 //System.out.println(n.getNodeType());
                 //System.out.println(n.getChildNodes().getLength());
                 //System.out.println(n.getNodeName() + ":" + n.getTextContent());
@@ -411,14 +411,18 @@ public class SOAPProcessor {
         boolean entity = false;
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node n = nodeList.item(i);
+            System.out.println("type: " + n.getNodeType() + "  name:" + n.getNodeName());
             if (n.getNodeType() == Node.ELEMENT_NODE) {
+                System.out.println("size: "+n.getChildNodes().getLength()); 
                 if (n.getChildNodes().getLength() == 1) {
+                    System.out.println("type: "+n.getFirstChild().getNodeType()); 
+                    
+                    if(n.getFirstChild().getNodeType() == Node.TEXT_NODE) {
                     entity = true;
                     labels.add(n.getNodeName());
-                    System.out.println("  -  " + n.getNodeName());
-                    System.out.println("  -  " + getNro(n.getParentNode().getChildNodes(), n.getNodeName()));
-
                     map.put(n.getNodeName(), n.getTextContent());
+                    System.out.println(n.getNodeName() + "," + n.getTextContent());
+                    }
                 }
             }
         }
@@ -426,59 +430,30 @@ public class SOAPProcessor {
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node n = nodeList.item(i);
             if (n.getNodeType() == Node.ELEMENT_NODE) {
-                if (n.getChildNodes().getLength() > 1) {
+                //if (n.getChildNodes().getLength() > 1) {
+                if(n.getFirstChild().getNodeType() == Node.ENTITY_NODE) {
                     if (!entity) {
                         rec2014(n.getChildNodes(), new HashMap<String, Object>(), recs, labels);
                     } else {
-                        System.out.println("  -  " + n.getNodeName());
                         int repeatAttr = getNro(n.getParentNode().getChildNodes(), n.getNodeName());
-                        System.out.println("  -  " + repeatAttr);
-                        if(repeatAttr == 1) { 
-                           map.put(n.getNodeName(), new ArrayList<Map<String, Object>>());
-                           rec2014(n.getChildNodes(), map, (List) map.get(n.getNodeName()), labels);
-                        } 
-                        if(repeatAttr > 1) { 
-                           //isDuplis = true;
-                           if(map.get(n.getNodeName()) == null) {
-                               map.put(n.getNodeName(), new ArrayList<Map<String, Object>>());                               
-                           }
-                           rec2014(n.getChildNodes(), new HashMap<String, Object>(), (List) map.get(n.getNodeName()), labels);
-                        } 
+                        System.out.println(repeatAttr);
+                        if (repeatAttr == 1) {
+                            map.put(n.getNodeName(), new ArrayList<Map<String, Object>>());
+                            rec2014(n.getChildNodes(), map, (List) map.get(n.getNodeName()), labels);
+                        }
+                        if (repeatAttr > 1) {
+                            if (map.get(n.getNodeName()) == null) {
+                                map.put(n.getNodeName(), new ArrayList<Map<String, Object>>());
+                            }
+                            rec2014(n.getChildNodes(), new HashMap<String, Object>(), (List) map.get(n.getNodeName()), labels);
+                        }
                     }
                 }
             }
         }
         if (entity) {
-            recs.add(map);
-        }
-    }
-
-    public void rec20142(NodeList nodeList, Map<String, Object> map, List<Map<String, Object>> recs, Set<String> labels) {
-        boolean entity = false;
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            Node n = nodeList.item(i);
-            if (n.getNodeType() == Node.ELEMENT_NODE) {
-                if (n.getChildNodes().getLength() == 1) {
-                    entity = true;
-                    labels.add(n.getNodeName());
-                    map.put(n.getNodeName(), n.getTextContent());
-                }
-            }
-        }
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            Node n = nodeList.item(i);
-            if (n.getNodeType() == Node.ELEMENT_NODE) {
-                if (n.getChildNodes().getLength() > 1) {
-                    if (!entity) {
-                        rec2014(n.getChildNodes(), new HashMap<String, Object>(), recs, labels);
-                    } else {
-                        map.put(n.getNodeName(), new ArrayList<Map<String, Object>>());
-                        rec2014(n.getChildNodes(), map, (List) map.get(n.getNodeName()), labels);
-                    }
-                }
-            }
-        }
-        if (entity) {
+            System.out.println("entity");
+            //System.out.println(map);
             recs.add(map);
         }
     }
@@ -503,23 +478,68 @@ public class SOAPProcessor {
         for (String s : labels) {
             System.out.println("lbl: " + s);
         }
-        //proc2014(lst, labels);
-        return null;
+
+        List<Map<String, String>> nlst = new ArrayList<Map<String, String>>();
+        //System.out.println("nro registros: " + lst.size());
+        //proc2014(lst, labels, nlst, new HashMap<String, String>(), 1, "/");
+        //System.out.println(new Gson().toJson(nlst));
+        return nlst;
     }
 
-    public void proc2014(List<Map<String, Object>> ls, Set<String> labels) {
+    public void proc2014(List<Map<String, Object>> ls, Set<String> labels, List<Map<String, String>> nlst, Map<String, String> reg, int level, String root) {
         for (Map<String, Object> o : ls) {
-            System.out.println("record --");
+            System.out.println("record -- " + level + "");
+            boolean nolist = true;
+            //Map<String, String> tmp = new HashMap<String, String>();
             for (Entry<String, Object> e : o.entrySet()) {
                 if (e.getValue() instanceof String) {
-                    System.out.println(e.getValue().getClass());
+                    reg.put(root + "/" + e.getKey(), (String) e.getValue());
+                    //System.out.println(" - " + e.getKey() + "," + e.getValue());
                 }
             }
             for (Entry<String, Object> e : o.entrySet()) {
                 if (e.getValue() instanceof ArrayList) {
-                    proc2014((List) e.getValue(), labels);
+                    level++;
+                    nolist = false;
+                    proc2014((List) e.getValue(), labels, nlst, reg, level--, e.getKey());
                 }
             }
+            if (nolist) {
+                //reg.putAll(tmp);
+                Map<String, String> tmp = new HashMap<String, String>();
+                //System.out.println(reg);
+                tmp.putAll(reg);
+                nlst.add(tmp);
+                //reg = new HashMap<String, String>();
+                //proc2014((List) e.getValue(), labels, nlst, reg, level++);
+            } else {
+                System.out.println(reg);
+            }
         }
+    }
+
+    public List<Map<String, String>> parseXML2014(Document document, String expression) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
+        //DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+        //DocumentBuilder builder = builderFactory.newDocumentBuilder();
+
+        List<Map<String, Object>> lst = new ArrayList<Map<String, Object>>();
+        //DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+        //DocumentBuilder builder = builderFactory.newDocumentBuilder();
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        System.out.println("XPath expression: " + expression);
+        //read a nodelist using xpath
+        NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(document, XPathConstants.NODESET);
+        System.out.println("Node Selected Length: " + nodeList.getLength());
+        Map<String, Object> mlst = new HashMap<String, Object>();
+        Set<String> labels = new HashSet<String>();
+        rec2014(nodeList, mlst, lst, labels);
+        //System.out.println(new Gson().toJson(lst));
+        for (String s : labels) {
+            System.out.println("lbl: " + s);
+        }
+        List<Map<String, String>> nlst = new ArrayList<Map<String, String>>();
+        proc2014(lst, labels, nlst, new HashMap<String, String>(), 1, "/");
+        //System.out.println(new Gson().toJson(nlst));
+        return nlst;
     }
 }
