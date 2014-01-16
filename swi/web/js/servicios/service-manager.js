@@ -5,6 +5,73 @@
  */
 Ext.ns('domain.UserManager');
 
+//Iframe Panel version 2.0
+Ext.IframePanel = Ext.extend(Ext.Panel, {
+    name: 'iframe',
+    iframe: null,
+    src: Ext.isIE && Ext.isSecure ? Ext.SSL_SECURE_URL : 'about:blank',
+    maskMessage: 'Cargando ...',
+    doMask: true,
+    // component build
+    initComponent: function() {
+        this.bodyCfg = {
+            tag: 'iframe',
+            frameborder: '0',
+            src: this.src,
+            name: this.name
+        }
+        Ext.apply(this, {
+        });
+        Ext.IframePanel.superclass.initComponent.apply(this, arguments);
+
+        // apply the addListener patch for 'message:tagging'
+        this.addListener = this.on;
+
+    },
+    onRender: function() {
+        Ext.IframePanel.superclass.onRender.apply(this, arguments);
+        this.iframe = Ext.isIE ? this.body.dom.contentWindow : window.frames[this.name];
+        this.body.dom[Ext.isIE ? 'onreadystatechange' : 'onload'] = this.loadHandler.createDelegate(this);
+    },
+    loadHandler: function() {
+        this.src = this.body.dom.src;
+        this.removeMask();
+    },
+    getIframe: function() {
+        return this.iframe;
+    },
+    getUrl: function() {
+        return this.body.dom.src;
+    },
+    setUrl: function(source) {
+        this.setMask();
+        this.body.dom.src = source;
+    },
+    resetUrl: function() {
+        this.setMask();
+        this.body.dom.src = this.src;
+    },
+    refresh: function() {
+        if (!this.isVisible()) {
+            return;
+        }
+        this.setMask();
+        this.body.dom.src = this.body.dom.src;
+    },
+    /** @private */
+    setMask: function() {
+        if (this.doMask) {
+            this.el.mask(this.maskMessage);
+        }
+    },
+    removeMask: function() {
+        if (this.doMask) {
+            this.el.unmask();
+        }
+    }
+});
+Ext.reg('iframepanel', Ext.IframePanel);
+
 domain.errors = {
     mustSelect: function() {
         Ext.MessageBox.show({
@@ -95,41 +162,34 @@ domain.ServiceManager = {
         }
     },
     Fields: function(data, gridcfg) {
-        var gdata = domain.ServiceManager.processor(data);
-        if (gdata.length > 0) {
+        if (data.length > 0) {
             var cols = new Array();
+
             var fields = new Array();
-            for (var prop in gdata[0]) {
-                if (prop !== '_root_') {
-                    if (gridcfg) {
-                        if (gridcfg[prop] !== '') {
-                            cols.push({
-                                header: gridcfg[prop],
-                                dataIndex: prop,
-                                sortable: true
-                            });
-                        }
-                    } else {
-                        cols.push({
-                            header: prop,
-                            dataIndex: prop,
-                            sortable: true
-                        });
-                    }
-                }
-                var field = {
+            for (var prop in data[0]) {
+                fields.push({
                     name: prop
-                };
-                fields.push(field)
+                })
             }
 
+            if (!gridcfg) {
+                for (var prop in data[0]) {
+                    cols.push({
+                        header: prop,
+                        dataIndex: prop,
+                        sortable: true
+                    });
+                }
+            } else {
+                cols = gridcfg;
+            }
             var grid = new Ext.grid.GridPanel({
                 title: 'Resultados',
                 height: 300,
                 selModel: new Ext.grid.RowSelectionModel({singleSelect: true}),
                 store: new Ext.data.JsonStore({
                     fields: fields,
-                    data: gdata,
+                    data: data,
                     autoLoad: true
                 }),
                 columns: cols
@@ -140,36 +200,78 @@ domain.ServiceManager = {
     },
     gridFields: function(data, id) {
         if (data.length > 0) {
-            var source = new Object();
-//            for (var prop in data[0]) {
-//                if (prop !== '_root_') {
-//                    //source[prop] = gridcfg[prop] !== null ? gridcfg[prop] : prop;
-//                    source[prop] = gridcfg ? gridcfg[prop] : prop;
-//                }
-//            }
-            Ext.each(data, function(col) {
-                source[col.dataIndex] = col.header;
-            });
+            function moveSelectedRow(grid, direction) {
+                var record = grid.getSelectionModel().getSelected();
+                if (!record) {
+                    return;
+                }
+                var index = grid.getStore().indexOf(record);
+                if (direction < 0) {
+                    index--;
+                    if (index < 0) {
+                        return;
+                    }
+                } else {
+                    index++;
+                    if (index >= grid.getStore().getCount()) {
+                        return;
+                    }
+                }
+                grid.getStore().remove(record);
+                grid.getStore().insert(index, record);
+                grid.getSelectionModel().selectRow(index, true);
+            };
 
-            var propsGrid = new Ext.grid.PropertyGrid({
+            var grid = new Ext.grid.EditorGridPanel({
+                height: 300,
+                selModel: new Ext.grid.RowSelectionModel({singleSelect: true}),
+                store: new Ext.data.JsonStore({
+                    fields: ['header', 'dataIndex', 'hidden', 'width', 'sortable'],
+                    data: data,
+                    autoLoad: true
+                }),
+                columns: [{
+                        header: 'Campo', dataIndex: 'dataIndex', width: 170
+                    }, {
+                        header: 'Etiqueta (Editable)', dataIndex: 'header', width: 170,
+                        editor: new Ext.form.TextField({
+                            allowBlank: false
+                        })
+                    }, {
+                        header: 'Ancho (Editable)', dataIndex: 'width', width: 100,
+                        editor: new Ext.form.NumberField({
+                            allowBlank: false
+                        })
+                    }, {
+                        xtype: 'checkcolumn', header: 'Oculto', dataIndex: 'hidden'
+                    }],
                 tbar: [{
                         text: 'Guardar',
                         iconCls: 'entity-save',
                         handler: function() {
+                            grid.getView().refresh();
+                            var store = grid.getStore();
+                            var source = new Array();
+                            Ext.each(store.data.items, function(item) {
+                                if (!item.data.hidden) {
+                                    item.data.hidden = false;
+                                }
+                                source.push(item.data);
+                            });
                             Ext.Ajax.request({
                                 url: Ext.SROOT + 'individual/setgridcols',
                                 method: 'POST',
                                 params: {
                                     id: id,
-                                    config: Ext.util.JSON.encode(propsGrid.source)
+                                    config: Ext.util.JSON.encode(source)
                                 },
                                 success: function(result, request) {
                                     win.close();
                                     Ext.MessageBox.show({
                                         title: 'Aviso',
-                                        msg: 'Se ha guardado correctamente. Vuelva a ejecutar.',
+                                        msg: 'Se ha guardado correctamente. Vuelva a ejecutar la operaci&oacute;n antes de volver a configurar las columnas.',
                                         buttons: Ext.MessageBox.OK,
-                                        icon: Ext.Msg.INFO
+                                        icon: Ext.Msg.WARNING
                                     });
                                 },
                                 failure: function(result, request) {
@@ -177,8 +279,19 @@ domain.ServiceManager = {
                                 }
                             });
                         }
-                    }],
-                source: source
+                    }, '-', {
+                        iconCls: 'arrow-up',
+                        tooltip: 'Subir',
+                        handler: function() {
+                            moveSelectedRow(grid, -1);
+                        }
+                    }, {
+                        iconCls: 'arrow-down',
+                        tooltip: 'Bajar',
+                        handler: function() {
+                            moveSelectedRow(grid, 1);
+                        }
+                    }]
             });
 
             var win = new Ext.Window({
@@ -186,9 +299,9 @@ domain.ServiceManager = {
                 iconCls: 'settings',
                 autoScroll: true,
                 height: 300,
-                width: 500,
+                width: 600,
                 layout: 'fit',
-                items: [propsGrid],
+                items: [grid],
                 modal: true,
                 buttons: [{
                         text: 'Cerrar',
@@ -198,7 +311,6 @@ domain.ServiceManager = {
                     }]
             });
             win.show();
-            //return propsGrid;
         }
         return null;
     },
@@ -335,6 +447,7 @@ domain.ServiceManager = {
     openWsdl: function(options) {
         if (options.node.attributes.iconCls === 'server') {
             var item = options.node.attributes;
+            options.panelinfo.removeAll();
             Ext.Ajax.request({
                 url: Ext.SROOT + 'servidor/' + item.id,
                 method: 'GET',
@@ -347,6 +460,12 @@ domain.ServiceManager = {
                             xtype: 'textfield',
                             width: 700,
                             value: s.servidor.wsdlurl
+                        }, {
+                            text: 'Ir',
+                            handler: function() {
+                                //window.location.reload();
+                                //setTimeout('window.location.reload()', 1);
+                            }
                         }];
                     var cfg = {
                         id: s.servidor.id,
@@ -354,7 +473,35 @@ domain.ServiceManager = {
                         title: s.servidor.nombre + ' - WSDL',
                         tbar: tb
                     };
-                    top.swi.ui.openModule(cfg);
+                    //top.swi.ui.openModule(cfg);
+                    //window.open(s.servidor.wsdlurl, '', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,copyhistory=no,width=800,height=530,screenX=50,screenY=50,top=50,left=200');
+                    var siframe = new Ext.IframePanel({
+                        src: s.servidor.wsdlurl,
+                        tbar: [{
+                                xtype: 'displayfield',
+                                value: 'WSDL'
+                            }, {
+                                xtype: 'textfield',
+                                width: 700,
+                                readOnly: true,
+                                value: s.servidor.wsdlurl
+                            }, {
+                                tooltip: 'Ir',
+                                iconCls: 'play',
+                                handler: function() {
+                                    siframe.getIframe().location.reload();
+                                }
+                            }, '->', {
+                                text: 'Abrir en nueva ventana',
+                                iconCls: 'world',
+                                handler: function() {
+                                    var win = window.open(s.servidor.wsdlurl, '_blank');
+                                    win.focus();
+                                }
+                            }]
+                    });
+                    options.panelinfo.add(siframe);
+                    options.panelinfo.doLayout();
                 },
                 failure: function(result, request) {
 
@@ -397,7 +544,7 @@ domain.ServiceManager = {
                             autoScroll: true,
                             height: 200,
                             tbar: [{
-                                    text: 'Abrir xml',
+                                    text: 'Abrir XML',
                                     iconCls: 'open',
                                     handler: function() {
                                         window.open('cachexml', '', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,copyhistory=no,width=800,height=530,screenX=50,screenY=50,top=50,left=200');
@@ -481,7 +628,8 @@ domain.ServiceManager = {
                                                     if (ro.success) {
                                                         if (ro.result.length !== 0) {
                                                             ppanel.removeAll();
-                                                            var rview = domain.ServiceManager.Fields(ro.result, null);
+                                                            var data = domain.ServiceManager.processor(ro.result);
+                                                            var rview = domain.ServiceManager.Fields(data, null);
                                                             if (rview) {
                                                                 ppanel.add(rview.grid);
                                                                 ppanel.doLayout();
@@ -764,7 +912,8 @@ domain.ServiceManager = {
                                         }
                                         if (ro.result.length !== 0) {
                                             ppanel.removeAll();
-                                            var rview = domain.ServiceManager.Fields(ro.result, ro.gridcfg);
+                                            var data = domain.ServiceManager.processor(ro.result);
+                                            var rview = domain.ServiceManager.Fields(data, ro.gridcfg);
                                             if (rview) {
                                                 var grid = rview.grid;
                                                 ppanel.add(grid);
@@ -883,7 +1032,11 @@ domain.ServiceManager.View = {
                                 handler: function() {
                                     var record = tree.getSelectionModel().getSelectedNode();
                                     if (record) {
-                                        domain.ServiceManager.openWsdl({node: record, tree: tree});
+                                        domain.ServiceManager.openWsdl({
+                                            panelinfo: serviceInfoPanel,
+                                            node: record,
+                                            tree: tree
+                                        });
                                     } else {
                                         domain.errors.mustSelect();
                                     }
@@ -891,22 +1044,16 @@ domain.ServiceManager.View = {
                             }
                         ]}
                 }, '-', {
-                    iconCls: 'drink',
+                    iconCls: 'arrow_divide',
                     text: 'Expandir',
-                    //tooltip: '',
                     handler: function() {
-                        this.text = 'ddd',
-                                tree.getRootNode().reload();
-                        tree.getRootNode().expand(true);
+                        tree.expandAll();
                     }
                 }, {
-                    iconCls: 'drink',
+                    iconCls: 'arrow_join',
                     text: 'Contraer',
-                    //tooltip: 'Abrir Operaci&oacute;n',
                     handler: function() {
-                        //this.text = 'ddd';
-                        tree.getRootNode().reload();
-                        //tree.getRootNode().expand(true);
+                        tree.collapseAll();
                     }
                 }, '-', {
                     text: 'Abrir ejecutar',
@@ -939,13 +1086,12 @@ domain.ServiceManager.View = {
                 }
             }
         });
-        //tree.getRootNode().expand(true);
+
         var serviceInfoPanel = new Ext.Panel({
             title: 'Informacion',
             region: 'center',
             layout: 'fit'
         });
-
 
         var sstore = new Ext.data.JsonStore({
             url: Ext.SROOT + 'individual/listaservicios',
@@ -978,8 +1124,14 @@ domain.ServiceManager.View = {
             region: 'center',
             loadMask: true,
             selModel: new Ext.grid.RowSelectionModel({singleSelect: true}),
-            title: 'Servicios Definidos',
+            title: 'Servicios definidos',
             tbar: [{
+                    iconCls: 'refresh',
+                    tooltip: 'Recargar',
+                    handler: function() {
+                        sgrid.store.reload();
+                    }
+                }, '-', {
                     text: 'Editar',
                     iconCls: 'update',
                     handler: function() {
@@ -1043,6 +1195,6 @@ domain.ServiceManager.View = {
             })
         });
     }
-}
+};
 
 Ext.onReady(domain.ServiceManager.View.init, domain.ServiceManager.View);

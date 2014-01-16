@@ -110,9 +110,10 @@
                         layout: 'border',
                         items: [form, tree],
                         modal: true,
-                        buttonAlign: 'center',
-                        buttons: [{
+                        //buttonAlign: 'center',
+                        tbar: [{
                                 text: 'Guardar',
+                                iconCls: 'entity-save',
                                 handler: function() {
                                     var selNodes = tree.getChecked();
                                     var nodessel = '';
@@ -143,6 +144,12 @@
                                             domain.Manager.mustBeSelect();
                                         }
                                     }
+                                }
+                            }],
+                        buttons: [{
+                                text: 'Cerrar',
+                                handler: function() {
+                                    win.close();
                                 }
                             }]
                     });

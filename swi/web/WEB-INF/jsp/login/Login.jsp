@@ -16,7 +16,7 @@
         <script type="text/javascript" src="js/login/loginform.js"></script>
         <style type="text/css">
             body {
-                background: url(images/w3.jpg);
+                background: url(images/asfi05.jpg);
                 padding: 10px;
                 font-family: tahoma;
                 font-size:11px;
