@@ -73,7 +73,7 @@ public class RpiController {
             rpi.setJsonfields(new Gson().toJson(this.rpiFormFieldsFromServices()));
             dao.update(rpi);
         }
-        System.out.println(rpi.getJsonfields());
+        //System.out.println(rpi.getJsonfields());
     }
 
     /**
