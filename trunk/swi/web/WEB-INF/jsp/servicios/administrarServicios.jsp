@@ -21,7 +21,7 @@
         <link rel="stylesheet" type="text/css" href="/ext-3.3.1/examples/ux/fileuploadfield/css/fileuploadfield.css"/>
         <!-- overrides to base library -->
         <script type="text/javascript" src="/ext-3.3.1/examples/ux/fileuploadfield/FileUploadField.js"></script>
-        
+        <script type="text/javascript" src="/ext-3.3.1/examples/ux/CheckColumn.js"></script>
         <script type="text/javascript" src="<c:url value="/js/servicios/service-manager.js"/>"></script> 
     </head>
     <body>     

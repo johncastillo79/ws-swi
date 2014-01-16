@@ -68,10 +68,18 @@
                         return arr;
                     }
                 },
-                fields: function(data, gridcfg, sm) {
-                    data = domain.Manager.processor(data);
+                fields: function(data, gridcfg, sm) {                    
                     if (data.length > 0) {
+                        
+                        var fields = new Array();
+                        for (var prop in data[0]) {
+                            fields.push({
+                                name: prop
+                            })
+                        }
+
                         var cols = new Array();
+                        //Numbered
                         if (sm) {
                             cols.push(sm);
                         } else if (data.length > 5) {
@@ -79,31 +87,24 @@
                                 width: 29
                             }));
                         }
-                        var fields = new Array();
-                        for (var prop in data[0]) {
-                            if (prop !== '_root_') {
-                                if (gridcfg) {
-                                    if (gridcfg[prop] !== '') {
-                                        cols.push({
-                                            header: gridcfg[prop],
-                                            dataIndex: prop,
-                                            sortable: true
-                                        });
-                                    }
-                                } else {
-                                    cols.push({
-                                        header: prop,
-                                        dataIndex: prop,
-                                        sortable: true
-                                    });
-                                }
+                        if (!gridcfg) {
+                            for (var prop in data[0]) {
+                                cols.push({
+                                    header: prop,
+                                    dataIndex: prop,
+                                    sortable: true
+                                });
                             }
-                            var field = {
-                                name: prop
-                            };
-                            fields.push(field)
+                        } else {
+                            //Omiting hidden field, For Users
+                            Ext.each(gridcfg, function(col) {
+                                if (!col.hidden) {
+                                    cols.push(col);
+                                }
+                            });
                         }
-                        var gridcfg = {
+
+                        var gconfig = {
                             store: new Ext.data.JsonStore({
                                 fields: fields,
                                 data: data,
@@ -111,65 +112,16 @@
                             }),
                             columns: cols
                         };
+
                         if (sm) {
-                            gridcfg.sm = sm;
+                            gconfig.sm = sm;
                         }
-                        var grid = new Ext.grid.GridPanel(gridcfg);
+
+                        var grid = new Ext.grid.GridPanel(gconfig);
                         return grid;
                     }
                     return null;
-                },
-                fields2: function(data, gridcfg, sm) {
-                    //var data = domain.Manager.processor(datai);
-                    if (data.length > 0) {
-                        var cols = new Array();
-                        if (sm) {
-                            cols.push(sm);
-                        } else if (data.length > 5) {
-                            cols.push(new Ext.grid.RowNumberer({
-                                width: 29
-                            }));
-                        }
-                        var fields = new Array();
-                        for (var prop in data[0]) {
-                            if (prop !== '_root_') {
-                                if (gridcfg) {
-                                    if (gridcfg[prop] !== '') {
-                                        cols.push({
-                                            header: gridcfg[prop],
-                                            dataIndex: prop,
-                                            sortable: true
-                                        });
-                                    }
-                                } else {
-                                    cols.push({
-                                        header: prop,
-                                        dataIndex: prop,
-                                        sortable: true
-                                    });
-                                }
-                            }
-                            var field = {
-                                name: prop
-                            };
-                            fields.push(field)
-                        }
-                        var gridcfg = {
-                            store: new Ext.data.JsonStore({
-                                fields: fields,
-                                data: data,
-                                autoLoad: true
-                            }),
-                            columns: cols
-                        };
-                        if (sm) {
-                            gridcfg.sm = sm;
-                        }
-                        var grid = new Ext.grid.GridPanel(gridcfg);
-                        return grid;
-                    }
-                    return null;
-                },
+                },                
                 individual: function(options) {
                     var serviceResponse;
                     var grid;
@@ -215,7 +167,8 @@
                                                     }
                                                     win.getEl().unmask();
                                                     var sm = new Ext.grid.CheckboxSelectionModel();
-                                                    grid = domain.Manager.fields(serviceResponse.result, serviceResponse.gridcfg, sm);
+                                                    var data = domain.Manager.processor(serviceResponse.result);
+                                                    grid = domain.Manager.fields(data, serviceResponse.gridcfg, sm);
                                                     ppanel.add(grid);
                                                     ppanel.doLayout();
                                                 },
@@ -239,12 +192,12 @@
                                                 //resPanel.body.update('<pre>' + serviceResponse.result + '</pre>');
                                                 resPanel.removeAll();
                                                 if (grid.getSelectionModel().getSelections().length > 0) {
-                                                    console.log(grid.getSelectionModel().getSelections());
+                                                    //console.log(grid.getSelectionModel().getSelections());
                                                     var ndata = new Array();
                                                     Ext.each(grid.getSelectionModel().getSelections(), function(rec) {
                                                         ndata.push(rec.data);
                                                     });
-                                                    var ngrid = domain.Manager.fields2(ndata, serviceResponse.gridcfg);
+                                                    var ngrid = domain.Manager.fields(ndata, serviceResponse.gridcfg);
                                                     resPanel.add(ngrid);
                                                     resPanel.doLayout();
                                                     options.salida.result = ndata;
@@ -608,7 +561,7 @@
                                             var robj = rdata[prop];
                                             var resPanel = Ext.getCmp('responsepanel-' + robj.id);
                                             if (resPanel) {
-                                                var gridx = domain.Manager.fields2(robj.result, robj.gridcfg);
+                                                var gridx = domain.Manager.fields(robj.result, robj.gridcfg);
                                                 resPanel.removeAll();
                                                 resPanel.add(gridx);
                                                 resPanel.doLayout();
@@ -651,9 +604,12 @@
             domain.Panel = {
                 init: function() {
                     var fileOpen = null;
+                    
+                    //RPI DATA
                     var _rpidata = new Object();
+                    
                     _rpidata.salida = new Object(); // = new Array();
-                    var isEjecutado = false;
+                    //var isEjecutado = false;
 
                     var formParametro = new Ext.FormPanel({
                         url: Ext.SROOT + 'rpiwsrwquest',
@@ -673,7 +629,7 @@
                                 handler: function() {
                                     _rpidata.entrada = domain.Manager.getEntrada(formParametro, formParametro.getForm().getValues());
                                     //_rpidata.salida = new Array();
-                                    isEjecutado = true;
+                                    //isEjecutado = true;
                                     Ext.each(servicesdata, function(s) {
                                         var params = new Object();
                                         Ext.each(s.parametros, function(p) {
@@ -689,23 +645,23 @@
                                             url: Ext.SROOT + 'webservicesystem',
                                             method: 'POST',
                                             params: params,
-                                            //waitMsg: 'Espere...',
                                             success: function(result, request) {
                                                 var robj = Ext.util.JSON.decode(result.responseText);
                                                 if (robj.success) {
                                                     if (robj.gridcfg) {
                                                         robj.gridcfg = Ext.util.JSON.decode(robj.gridcfg);
                                                     }
-                                                    _rpidata.salida['srv-' + s.id] = robj;
+                                                    _rpidata.salida['srv-' + s.id] = new Object();
                                                     var resPanel = Ext.getCmp('responsepanel-' + robj.id);
                                                     resPanel.getEl().unmask();
-                                                    //resPanel.body.update('<pre>' + robj.result + '</pre>');
-                                                    var grid = domain.Manager.fields(robj.result, robj.gridcfg);
+                                                    var data = domain.Manager.processor(robj.result);
+                                                    _rpidata.salida['srv-' + s.id].result = data;
+                                                    var grid = domain.Manager.fields(data, robj.gridcfg);
                                                     resPanel.removeAll();
                                                     resPanel.add(grid);
                                                     resPanel.doLayout();
                                                 } else {
-                                                    var resPanel = Ext.getCmp('responsepanel-' + robj.id);
+                                                    var resPanel = Ext.getCmp('responsepanel-' + s.id);
                                                     resPanel.getEl().unmask();
                                                     resPanel.body.update('<span style="color:red"><b>Error del servidor...!</b></span>');
                                                 }
@@ -713,7 +669,7 @@
                                             failure: function(result, request) {
                                                 var respanel = Ext.getCmp('responsepanel-' + s.id);
                                                 respanel.getEl().unmask();
-                                                resPanel.body.update('<span style="color:red"><b>Error del servidor...!</b></span>');
+                                                respanel.body.update('<span style="color:red"><b>Error del servidor...!</b></span>');
                                                 //Error unknow
                                             }
                                         });
@@ -801,8 +757,9 @@
                         region: 'east',
                         split: true,
                         autoScroll: true,
-                        width: 550,
-                        minWidth: 500,
+                        width: 700,
+                        minWidth: 300,
+                        maxWidth: 900,
                         layout: 'anchor',
                         items: []
                     });

@@ -9,7 +9,7 @@
 Ext.ns('Ext.samples');
 
 (function() {
-    
+
     Ext.samples.processor = function(json) {
         var data = Ext.util.JSON.decode(json);
         var str = '[{';
@@ -47,40 +47,42 @@ Ext.ns('Ext.samples');
             return arr;
         }
     };
-    
-    
-    Ext.samples.Fields = function(datai, gridcfg) {
-        var data = Ext.samples.processor(datai);
+
+
+    Ext.samples.Fields = function(data, gridcfg) {
         if (data.length > 0) {
-            var cols = new Array();  
-            if(data.length > 5) {
+
+            var fields = new Array();
+            for (var prop in data[0]) {
+                fields.push({
+                    name: prop
+                })
+            }
+
+            var cols = new Array();
+            //Numbered
+            if (sm) {
+                cols.push(sm);
+            } else if (data.length > 5) {
                 cols.push(new Ext.grid.RowNumberer({
                     width: 29
                 }));
             }
-            var fields = new Array();
-            for (var prop in data[0]) {
-                if (prop !== '_root_') {
-                    if (gridcfg) {
-                        if (gridcfg[prop] !== '') {
-                            cols.push({
-                                header: gridcfg[prop],
-                                dataIndex: prop,
-                                sortable: true
-                            });
-                        }
-                    } else {
-                        cols.push({
-                            header: prop,
-                            dataIndex: prop,
-                            sortable: true
-                        });
-                    }
+            if (!gridcfg) {
+                for (var prop in data[0]) {
+                    cols.push({
+                        header: prop,
+                        dataIndex: prop,
+                        sortable: true
+                    });
                 }
-                var field = {
-                    name: prop
-                };
-                fields.push(field)
+            } else {
+                //Omiting hidden field, For Users
+                Ext.each(gridcfg, function(col) {
+                    if (!col.hidden) {
+                        cols.push(col);
+                    }
+                });
             }
 
             var grid = new Ext.grid.GridPanel({
@@ -151,7 +153,7 @@ Ext.ns('Ext.samples');
                                         //console.log(ro.gridcfg);
                                         if (ro.result.length !== 0) {
                                             ppanel.removeAll();
-                                            var grid = Ext.samples.Fields(ro.result, ro.gridcfg);
+                                            var grid = Ext.samples.Fields(Ext.samples.processor(ro.result), ro.gridcfg);
                                             ppanel.add(grid);
                                             ppanel.doLayout();
                                         } else {
