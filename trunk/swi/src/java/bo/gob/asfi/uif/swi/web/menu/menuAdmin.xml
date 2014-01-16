@@ -139,7 +139,7 @@
             <text>Ayuda</text> 
             <iconCls>help</iconCls> 
             <module>
-                <id>cd-002</id> 
+                <id>hp-001</id> 
                 <title>Manual de Usuario</title>
                 <iconCls>icon</iconCls> 
                 <url>ayuda.pdf</url> 
