@@ -18,6 +18,73 @@
         <script type="text/javascript" src="<c:url value="libs/fe/Ext.ux.FileBrowserPanel.js"/>"></script> 
 
         <script type="text/javascript">
+            //Iframe Panel version 2.0
+            Ext.IframePanel = Ext.extend(Ext.Panel, {
+                name: 'iframe',
+                iframe: null,
+                src: Ext.isIE && Ext.isSecure ? Ext.SSL_SECURE_URL : 'about:blank',
+                maskMessage: 'Cargando ...',
+                doMask: true,
+                // component build
+                initComponent: function() {
+                    this.bodyCfg = {
+                        tag: 'iframe',
+                        frameborder: '0',
+                        src: this.src,
+                        name: this.name
+                    }
+                    Ext.apply(this, {
+                    });
+                    Ext.IframePanel.superclass.initComponent.apply(this, arguments);
+
+                    // apply the addListener patch for 'message:tagging'
+                    this.addListener = this.on;
+
+                },
+                onRender: function() {
+                    Ext.IframePanel.superclass.onRender.apply(this, arguments);
+                    this.iframe = Ext.isIE ? this.body.dom.contentWindow : window.frames[this.name];
+                    this.body.dom[Ext.isIE ? 'onreadystatechange' : 'onload'] = this.loadHandler.createDelegate(this);
+                },
+                loadHandler: function() {
+                    this.src = this.body.dom.src;
+                    this.removeMask();
+                },
+                getIframe: function() {
+                    return this.iframe;
+                },
+                getUrl: function() {
+                    return this.body.dom.src;
+                },
+                setUrl: function(source) {
+                    this.setMask();
+                    this.body.dom.src = source;
+                },
+                resetUrl: function() {
+                    this.setMask();
+                    this.body.dom.src = this.src;
+                },
+                refresh: function() {
+                    if (!this.isVisible()) {
+                        return;
+                    }
+                    this.setMask();
+                    this.body.dom.src = this.body.dom.src;
+                },
+                /** @private */
+                setMask: function() {
+                    if (this.doMask) {
+                        this.el.mask(this.maskMessage);
+                    }
+                },
+                removeMask: function() {
+                    if (this.doMask) {
+                        this.el.unmask();
+                    }
+                }
+            });
+            Ext.reg('iframepanel', Ext.IframePanel);
+
             Ext.namespace('domain');
             domain.errors = {
                 mustSelect: function() {
@@ -68,9 +135,9 @@
                         return arr;
                     }
                 },
-                fields: function(data, gridcfg, sm) {                    
+                fields: function(data, gridcfg, sm) {
                     if (data.length > 0) {
-                        
+
                         var fields = new Array();
                         for (var prop in data[0]) {
                             fields.push({
@@ -121,7 +188,7 @@
                         return grid;
                     }
                     return null;
-                },                
+                },
                 individual: function(options) {
                     var serviceResponse;
                     var grid;
@@ -545,6 +612,7 @@
                                 text: 'Abrir',
                                 handler: function() {
                                     var record = grid.getSelectionModel().getSelected();
+                                    console.log(record);
                                     if (record) {
                                         options.ptitle.setTitle('Formulario de Consulta - (' + record.data.nombre + ')');
                                         var fdata = Ext.util.JSON.decode(record.data.entrada);
@@ -557,9 +625,11 @@
 
                                         var rdata = Ext.util.JSON.decode(record.data.salida);
                                         options.output.salida = rdata;
+                                        console.log(rdata);
                                         for (var prop in rdata) {
                                             var robj = rdata[prop];
                                             var resPanel = Ext.getCmp('responsepanel-' + robj.id);
+                                            console.log(robj.id);
                                             if (resPanel) {
                                                 var gridx = domain.Manager.fields(robj.result, robj.gridcfg);
                                                 resPanel.removeAll();
@@ -573,6 +643,7 @@
                                         Ext.getCmp('__rpisave').setDisabled(false);
                                         Ext.getCmp('__rpisaveas').setDisabled(false);
                                         Ext.getCmp('__rpiprint').setDisabled(false);
+                                        Ext.getCmp('__rpiprintxls').setDisabled(false);
 
                                         win.close();
                                     } else {
@@ -598,16 +669,44 @@
                         });
                     }
                     return a;
+                },
+                print: function(id, file) {
+                      if(file === 'PDF') {
+                      window.location =  '/ReportWebUIF/rpi_report?id='+id;
+                      }
+                      if(file === 'XLS') {
+                      window.location =  '/ReportWebUIF/rpi_report?id='+id + '&format=excel';
+                      }
+                      
+//                    var siframe = new Ext.IframePanel({
+//                        src: '/ReportWebUIF/rpi_report?id='+id
+//                    });
+//                    var win = new Ext.Window({
+//                        title: 'Imprimir archivo...',
+//                        autoScroll: true,
+//                        width: 800,
+//                        height: 500,
+//                        layout: 'fit',
+//                        items: [siframe],
+//                        modal: true,
+//                        buttons: [{
+//                                text: 'Cerrar',
+//                                handler: function() {
+//                                    win.close();
+//                                }
+//                            }]
+//                    });
+//                    win.show();
                 }
             };
 
             domain.Panel = {
                 init: function() {
                     var fileOpen = null;
-                    
+
                     //RPI DATA
                     var _rpidata = new Object();
-                    
+
                     _rpidata.salida = new Object(); // = new Array();
                     //var isEjecutado = false;
 
@@ -648,10 +747,13 @@
                                             success: function(result, request) {
                                                 var robj = Ext.util.JSON.decode(result.responseText);
                                                 if (robj.success) {
+                                                    _rpidata.salida['srv-' + s.id] = new Object();
+                                                    _rpidata.salida['srv-' + s.id].id = s.id;
                                                     if (robj.gridcfg) {
                                                         robj.gridcfg = Ext.util.JSON.decode(robj.gridcfg);
+                                                        _rpidata.salida['srv-' + s.id].gridcfg = robj.gridcfg;
                                                     }
-                                                    _rpidata.salida['srv-' + s.id] = new Object();
+                                                    //_rpidata.salida['srv-' + s.id] = new Object();
                                                     var resPanel = Ext.getCmp('responsepanel-' + robj.id);
                                                     resPanel.getEl().unmask();
                                                     var data = domain.Manager.processor(robj.result);
@@ -719,13 +821,28 @@
                                                 }
                                             }
                                         }, '-', {
-                                            text: 'Imprimir',
+                                            text: 'Imprimir PDF',
                                             iconCls: 'printer',
                                             id: '__rpiprint',
                                             disabled: true,
                                             handler: function() {
-                                                alert(_rpidata.id);
+                                                //alert(_rpidata.id);
                                                 //domain.Manager.imprimir({});
+                                                if (_rpidata.id) {
+                                                    domain.Manager.print(_rpidata.id, 'PDF');
+                                                }
+                                            }
+                                        }, {
+                                            text: 'Imprimir MS Excel',
+                                            iconCls: 'printer',
+                                            id: '__rpiprintxls',
+                                            disabled: true,
+                                            handler: function() {
+                                                //alert(_rpidata.id);
+                                                //domain.Manager.imprimir({});
+                                                if (_rpidata.id) {
+                                                    domain.Manager.print(_rpidata.id, 'XLS');
+                                                }
                                             }
                                         }]
                                 }

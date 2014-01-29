@@ -104,17 +104,15 @@ domain.security.Login = function() {
     });
 
     var win = new Ext.Window({
-        title: 'Iniciar sesi&oacute;n',
-        iconCls: 'key',
+        title: 'Iniciar sesi&oacute;n',        
         width: 450,
         height: 200,
-        layout: 'anchor',
-        //modal:true,
+        layout: 'anchor',        
         resizable: false,
         closable: false,
         items: [{
                 xtype: 'panel',
-                bodyStyle: 'padding:10px;background-color:#FFFFFF;color:#CCCCCC',
+                bodyStyle: 'padding:10px;background-color:#FFFFFF;color:#777777',
                 html: '<b>Identifíquese para continuar...</b>',
                 height: 50
             }, login]
