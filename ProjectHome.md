@@ -1,0 +1,1 @@
+Generic Web Service Client, based on Predic8 SOA libraries
